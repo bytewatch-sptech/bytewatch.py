@@ -9,7 +9,7 @@ def criarArquivo():
     if not os.path.exists(arquivoCsv):
         with open('dados.csv', 'w', newline='') as arquivo:
             writer = csv.writer(arquivo)
-            writer.writerow(['data', '% Cpu', '% Cpu por nucleo', 'tempo cpu', 'processos ativos', 'ram total', 'ram usada', 'ram disponivel', '% Ram', '% Disco', 'disco disponivel', 'disco usado'])
+            writer.writerow(['Data', '% CPU', '% CPU por nucleo', 'Tempo CPU', 'Processos ativos', 'RAM total', 'RAM usada', 'RAM disponivel', '% RAM', '% Disco', 'Disco disponivel', 'Disco usado'])
 
         print(f'{arquivoCsv} criado com sucesso!')
 
