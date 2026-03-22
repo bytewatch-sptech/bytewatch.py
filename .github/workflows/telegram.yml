@@ -1,0 +1,66 @@
+name: Telegram Notifications
+
+on:
+  push:
+  pull_request:
+    types: [opened, closed, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Telegram message
+        run: |
+          EVENT="${{ github.event_name }}"
+          MESSAGE=""
+
+          if [ "$EVENT" == "push" ]; then
+            MESSAGE=$(printf "🚀 *Novo commit!*\n\n👤 *Autor:* %s\n📂 *Repo:* %s\n🌿 *Branch:* %s\n\n💬 *Mensagem:*\n\"%s\"\n\n🔗 [Ver commit](https://github.com/%s/commit/%s)" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${GITHUB_REF#refs/heads/}" \
+            "${{ github.event.head_commit.message }}" \
+            "${{ github.repository }}" \
+            "${{ github.sha }}")
+          fi
+
+          if [ "$EVENT" == "pull_request" ] && [ "${{ github.event.action }}" != "closed" ]; then
+            MESSAGE=$(printf "📦 *Pull Request %s*\n\n👤 *Autor:* %s\n📂 *Repo:* %s\n\n📝 *Título:* %s\n\n🔗 [Ver PR](%s)" \
+            "${{ github.event.action }}" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${{ github.event.pull_request.title }}" \
+            "${{ github.event.pull_request.html_url }}")
+          fi
+
+          if [ "$EVENT" == "pull_request" ] && [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+            MESSAGE=$(printf "🎉 *PR Mergeado!*\n\n👤 *Autor:* %s\n📂 *Repo:* %s\n\n📝 *Título:* %s\n\n🔗 [Ver PR](%s)" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${{ github.event.pull_request.title }}" \
+            "${{ github.event.pull_request.html_url }}")
+          fi
+
+          if [ "$EVENT" == "pull_request" ] && [ "${{ github.event.action }}" == "closed" ] && [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+            MESSAGE=$(printf "❌ *PR Fechado (sem merge)*\n\n👤 *Autor:* %s\n📂 *Repo:* %s\n\n🔗 [Ver PR](%s)" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${{ github.event.pull_request.html_url }}")
+          fi
+
+          if [ "$EVENT" == "pull_request_review" ] && [ "${{ github.event.review.state }}" == "approved" ]; then
+            MESSAGE=$(printf "✅ *PR Aprovado!*\n\n👤 *Revisor:* %s\n📂 *Repo:* %s\n\n🔗 [Ver PR](%s)" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${{ github.event.pull_request.html_url }}")
+          fi
+
+          if [ -n "$MESSAGE" ]; then
+            curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+              -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+              -d text="$MESSAGE" \
+              -d parse_mode=Markdown
+          fi
