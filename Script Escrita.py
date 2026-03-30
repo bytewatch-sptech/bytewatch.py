@@ -1,6 +1,18 @@
 import psutil, datetime, time, os, json, platform
 import speedtest
 import pandas as pd 
+import boto3
+
+bucket = ""
+
+def salvar_arquivo(file, bucket, path, fileName):
+    s3 = boto3.client('s3')
+
+    s3.upload_file(
+        Filename=f'{file}',
+        Bucket=f'{bucket}',    
+        Key=f'{path}/{fileName}'
+    )
 
 def pegarVelocidadeDownload():
     try:
@@ -125,6 +137,8 @@ while True:
                 time.sleep(1)
     else:
         df_monitoramento.to_csv(metricas, mode="a", header=False, index=False)
+    
+    salvar_arquivo(metricas, bucket, "maquina1/bruto", metricas)
 
     for i in range(len(idProcessos)):
 
