@@ -14,36 +14,49 @@ def salvar_arquivo(file, bucket, path, fileName):
         Key=f'{path}/{fileName}'
     )
 
-def pegarVelocidadeDownload():
-    try:
-        s = speedtest.Speedtest()
-        return s.download() / 1_000_000  # Mbps
-    except Exception as e:
-        print(f"Erro ao medir velocidade de download: {e}")
-        return 0.0
-
-def pegarVelocidadeUpload():
-    try:
-        s = speedtest.Speedtest()
-        return s.upload() / 1_000_000  # Mbps
-    except Exception as e:
-        print(f"Erro ao medir velocidade de upload: {e}")
-        return 0.0
-
 data = datetime.date.today()
 
-metricas = f"metricas_{data}.csv"
+
+metricas = f"metricasPandas.csv"
 processos = f"processos_{data}.csv"
 
 
 
 print(f'Inicializando processos de monitoramento...')
+def capturarProcessos():
+    processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent']))
+    quantidadeProcessos = len(processos_info)
+    idProcessos = [proc.info.get('pid') for proc in processos_info]
+    nomeProcesso = [proc.info.get('name') for proc in processos_info]
+    usuarioProcesso = [proc.info.get('username') for proc in processos_info]
+    consumoCPUProcesso = [proc.info.get('cpu_percent', 0) for proc in processos_info]
+    consumoRAMProcesso = [proc.info.get('memory_percent', 0) for proc in processos_info]
+
+    for i in range(len(idProcessos)):
+
+        processos_dict = {"quantidadeProcessos": [quantidadeProcessos], "Data": [horas], "idProcessos": [idProcessos[i]], "nomeProcesso": [nomeProcesso[i]], "usuarioProcesso": [usuarioProcesso[i]], "consumoCPUProcesso": [consumoCPUProcesso[i]], "consumoRAMProcesso": [consumoRAMProcesso[i]]}
+
+        df_processos = pd.DataFrame(processos_dict)
+
+        if not os.path.exists(processos):
+            while True:
+                print("Criando arquivo de processos... \n")
+                try:
+                    df_processos.to_csv(processos, index=False)
+                    break
+                except Exception as e:
+                    print(f"Erro ao criar {processos}: {e}")
+                    time.sleep(1)
+        else:
+            df_processos.to_csv(processos, mode="a", header=False, index=False)
 
 # loop infinito para definir e enviar as métricas para um arquivo CSV a cada 10 segundos.
 while True:
 
-    velocidadeDownload = pegarVelocidadeDownload()
-    velocidadeUpload = pegarVelocidadeUpload()
+    informacoes_rede = psutil.net_io_counters()
+
+    velocidadeDownload = informacoes_rede.bytes_recv
+    velocidadeUpload = informacoes_rede.bytes_sent
     nome_maquina = platform.node()
     horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -59,19 +72,9 @@ while True:
     ramUsada = (psutil.virtual_memory().used)
     ramTotal = (psutil.virtual_memory().total)
 
-    discoLivre = (psutil.disk_usage("C:\\").free)
-    discoUsado = (psutil.disk_usage("C:\\").used)
-    discoTotal = (psutil.disk_usage("C:\\").total)
-
-    processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent']))
-    quantidadeProcessos = len(processos_info)
-    idProcessos = [proc.info.get('pid') for proc in processos_info]
-    nomeProcesso = [proc.info.get('name') for proc in processos_info]
-    usuarioProcesso = [proc.info.get('username') for proc in processos_info]
-    consumoCPUProcesso = [proc.info.get('cpu_percent', 0) for proc in processos_info]
-    consumoRAMProcesso = [proc.info.get('memory_percent', 0) for proc in processos_info]
-
-
+    discoLivre = (psutil.disk_usage("/").free)
+    discoUsado = (psutil.disk_usage("/").used)
+    discoTotal = (psutil.disk_usage("/").total)
 
     # Imprime as métricas coletadas no terminal.
     print(f"""
@@ -140,21 +143,4 @@ while True:
     
     salvar_arquivo(metricas, bucket, "maquina1/bruto", metricas)
 
-    for i in range(len(idProcessos)):
-
-        processos_dict = {"quantidadeProcessos": [quantidadeProcessos], "Data": [horas], "idProcessos": [idProcessos[i]], "nomeProcesso": [nomeProcesso[i]], "usuarioProcesso": [usuarioProcesso[i]], "consumoCPUProcesso": [consumoCPUProcesso[i]], "consumoRAMProcesso": [consumoRAMProcesso[i]]}
-
-        df_processos = pd.DataFrame(processos_dict)
-
-        if not os.path.exists(processos):
-            while True:
-                print("Criando arquivo de processos... \n")
-                try:
-                    df_processos.to_csv(processos, index=False)
-                    break
-                except Exception as e:
-                    print(f"Erro ao criar {processos}: {e}")
-                    time.sleep(1)
-        else:
-            df_processos.to_csv(processos, mode="a", header=False, index=False)
     time.sleep(1800)
