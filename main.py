@@ -1,7 +1,9 @@
 from escrita import Escrita
+from leitura import Leitura
 import time
 
 capturaDadosComponentes = Escrita()
+leituraDadosComponentes = Leitura()
 
 while True:
     dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
@@ -11,5 +13,7 @@ while True:
     dadosProcessos = capturaDadosComponentes.capturarProcessos()
     arquivoProcessos = capturaDadosComponentes.arquivoProcessos
     capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+
+    leituraDadosComponentes.mainLoop()
 
     time.sleep(10)

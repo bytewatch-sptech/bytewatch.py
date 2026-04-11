@@ -1,4 +1,4 @@
-import time, psutil, os, datetime, platform, uuid, subprocess, sys, boto3
+import time, psutil, os, datetime, platform, uuid, boto3
 from cpuinfo import get_cpu_info
 from re import findall
 import pandas as pd 
@@ -7,7 +7,7 @@ class Escrita():
     arquivoProcessos = ""
     arquivoMetricas = ""
     macAddress = ""
-    cpu_nome = ""
+    cpu_nome = "Desconhecido"
     
     def __init__(self):
         self.macAddress = self.obterMacAddress()
@@ -69,7 +69,7 @@ class Escrita():
         consumoRAMProcesso = [proc.info.get('memory_percent', 0) for proc in processos_info]
 
         for i in range(len(idProcessos)):
-            processos_dict = {"quantidadeProcessos": [quantidadeProcessos], "Data": [horas], "idProcessos": [idProcessos[i]], "nomeProcesso": [nomeProcesso[i]], "usuarioProcesso": [usuarioProcesso[i]], "consumoCPUProcesso": [consumoCPUProcesso[i]], "consumoRAMProcesso": [consumoRAMProcesso[i]]}
+            processos_dict = {"macAddress": self.macAddress, "quantidadeProcessos": quantidadeProcessos, "Data": horas, "idProcessos": idProcessos[i], "nomeProcesso": nomeProcesso[i], "usuarioProcesso": usuarioProcesso[i], "consumoCPUProcesso": consumoCPUProcesso[i], "consumoRAMProcesso": consumoRAMProcesso[i]}
             dadosProcesso.append(processos_dict)
         
         return dadosProcesso
