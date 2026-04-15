@@ -6,22 +6,25 @@ from db import database
 import time
 
 capturaDadosComponentes = Escrita()
-leituraDadosComponentes = Leitura()
+# leituraDadosComponentes = Leitura()
 
-while True:
-    macAddress = capturaDadosComponentes.macAddress
-    if (not database.macAddressExiste(macAddress)):
-        print(f"Servidor com mac address {macAddress} não está cadastrado!")
-        break
+macAddress = capturaDadosComponentes.macAddress
+if (not database.macAddressExiste(macAddress)):
+    print(f"Servidor com mac address {macAddress} não está cadastrado!")
+    
+else:
+    while True:
 
-    dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
-    arquivoMetricas = capturaDadosComponentes.arquivoMetricas
-    capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+        dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
+        arquivoMetricas = capturaDadosComponentes.arquivoMetricas
+        capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+        bucket = "learning-bucket-803426402363-us-east-1-an"
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, bucket, "", arquivoMetricas)
 
-    dadosProcessos = capturaDadosComponentes.capturarProcessos()
-    arquivoProcessos = capturaDadosComponentes.arquivoProcessos
-    capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        # dadosProcessos = capturaDadosComponentes.capturarProcessos()
+        # arquivoProcessos = capturaDadosComponentes.arquivoProcessos
+        # capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
 
-    leituraDadosComponentes.mainLoop()
+        # leituraDadosComponentes.mainLoop()
 
-    time.sleep(10)
+        time.sleep(10)

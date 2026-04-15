@@ -37,9 +37,8 @@ class Escrita():
         s3.upload_file(
             Filename=f'{file}',
             Bucket=f'{bucket}',    
-            Key=f'{path}/{fileName}'
+            Key=f'raw/{fileName}'
         )
-
 
     def pegarVelocidadeInternet(self):
         net_io = psutil.net_io_counters()
