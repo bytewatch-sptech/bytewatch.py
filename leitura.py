@@ -59,68 +59,40 @@ class Leitura:
         return ultima_data, dataframeProcessos.round(2)
 
     def formatarDadosComponentes(self):
-        ultimo = self.dataframe.iloc[-1]
 
         horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        nome_maquina = ultimo["nome_maquina"]
-        processador = ultimo["processador"]
+        self.dataframe["nome_maquina"] = self.dataframe["nome_maquina"]
+        self.dataframe["processador"] = self.dataframe["processador"]
 
-        macAddress = ultimo["macAddress"]
+        self.dataframe["macAddress"] = self.dataframe["macAddress"]
 
-        cpuPorcentagem = ultimo["cpuPorcentagem"]
-        cpuNucleosFisicos = ultimo["cpuNucleosFisicos"]
-        cpuNucleosLogicos = ultimo["cpuNucleosLogicos"]
+        self.dataframe["cpuPorcentagem"] = self.dataframe["cpuPorcentagem"]
+        self.dataframe["cpuNucleosFisicos"] = self.dataframe["cpuNucleosFisicos"]
+        self.dataframe["cpuNucleosLogicos"] = self.dataframe["cpuNucleosLogicos"]
 
-        cpuTempoUser = round(ultimo["cpuTempoUser"] / 60)
-        cpuTempoSistema = round(ultimo["cpuTempoSistema"] / 60)
-        cpuTempoInativo = round(ultimo["cpuTempoInativo"] / 60)
+        self.dataframe["cpuTempoUser"] = round(self.dataframe["cpuTempoUser"] / 60)
+        self.dataframe["cpuTempoSistema"] = round(self.dataframe["cpuTempoSistema"] / 60)
+        self.dataframe["cpuTempoInativo"] = round(self.dataframe["cpuTempoInativo"] / 60)
 
-        ramLivre  = round(ultimo["ramLivre"]  / 1024**3, 2)
-        ramUsada  = round(ultimo["ramUsada"]  / 1024**3, 2)
-        ramTotal  = round(ultimo["ramTotal"]  / 1024**3, 2)
+        self.dataframe["ramLivre"]  = round(self.dataframe["ramLivre"]  / 1024**3, 2)
+        self.dataframe["ramUsada"] = round(self.dataframe["ramUsada"]  / 1024**3, 2)
+        self.dataframe["ramTotal"]  = round(self.dataframe["ramTotal"]  / 1024**3, 2)
 
-        discoLivre = round(ultimo["discoLivre"] / 1024**3, 2)
-        discoUsado = round(ultimo["discoUsado"] / 1024**3, 2)
-        discoTotal = round(ultimo["discoTotal"] / 1024**3, 2)
+        self.dataframe["discoLivre"] = round(self.dataframe["discoLivre"] / 1024**3, 2)
+        self.dataframe["discoUsado"] = round(self.dataframe["discoUsado"] / 1024**3, 2)
+        self.dataframe["discoTotal"] = round(self.dataframe["discoTotal"] / 1024**3, 2)
 
-        mediaRam   = round(self.dataframe["ramUsada"].mean() / 1024**3, 2)
-        porcentagemRam = round((ramUsada / ramTotal) * 100, 2)
-        mediaDisco = round(self.dataframe["discoUsado"].mean() / 1024**3, 2)
-        porcentagemDisco = round((discoUsado / discoTotal) * 100, 2)
+        self.dataframe["ramUsada"] = round(self.dataframe["ramUsada"].mean() / 1024**3, 2)
+        porcentagemRam = round((self.dataframe["ramUsada"] / self.dataframe["ramTotal"]) * 100, 2)
+        self.dataframe["discoUsado"] = round(self.dataframe["discoUsado"].mean() / 1024**3, 2)
+        porcentagemDisco = round((self.dataframe["discoUsado"] / self.dataframe["discoTotal"]) * 100, 2)
 
-        megabytesEnviados = round(ultimo["bytesEnviados"] / 1024**2, 2)
-        megabytesRecebidos = round(ultimo["bytesRecebidos"] / 1024**2, 2)
-        velocidadeDownload = round(ultimo["velocidadeDownload"])
-        velocidadeUpload = round(ultimo["velocidadeUpload"])
+        self.dataframe["bytesEnviados"] = round(self.dataframe["bytesEnviados"] / 1024**2, 2)
+        self.dataframe["bytesRecebidos"] = round(self.dataframe["bytesRecebidos"] / 1024**2, 2)
+        self.dataframe["velocidadeDownload"] = round(self.dataframe["velocidadeDownload"])
+        self.dataframe["velocidadeUpload"] = round(self.dataframe["velocidadeUpload"])
 
-        dados_resultados = {
-            "Horário": [horas],
-            "macAddress": [macAddress],
-            "nome_maquina": [nome_maquina],
-            "processador": [processador],
-            "cpuPorcentagem": [cpuPorcentagem],
-            "cpuNucleosFisicos": [cpuNucleosFisicos],
-            "cpuNucleosLogicos": [cpuNucleosLogicos],
-            "cpuTempoUser": [cpuTempoUser],
-            "cpuTempoSistema": [cpuTempoSistema],
-            "cpuTempoInativo": [cpuTempoInativo],
-            "ramLivre": [ramLivre],
-            "ramUsada": [ramUsada],
-            "ramTotal": [ramTotal],
-            "discoLivre": [discoLivre],
-            "discoUsado": [discoUsado],
-            "discoTotal": [discoTotal],
-            "mediaRamGB": [mediaRam],
-            "mediaDiscoGB": [mediaDisco],
-            "porcentagemRam": [porcentagemRam],
-            "porcentagemDisco": [porcentagemDisco],
-            "megabytesEnviados": [megabytesEnviados],
-            "megabytesRecebidos": [megabytesRecebidos],
-            "velocidadeDownload": [velocidadeDownload],
-            "velocidadeUpload": [velocidadeUpload]
-        }
-
-        return pd.DataFrame(dados_resultados)
+        return self.dataframe
     
     def mainLoop(self):
         dados = self.formatarDadosComponentes()
