@@ -82,10 +82,10 @@ class Leitura:
         self.dataframe["discoUsado"] = round(self.dataframe["discoUsado"] / 1024**3, 2)
         self.dataframe["discoTotal"] = round(self.dataframe["discoTotal"] / 1024**3, 2)
 
-        self.dataframe["ramUsada"] = round(self.dataframe["ramUsada"].mean() / 1024**3, 2)
-        porcentagemRam = round((self.dataframe["ramUsada"] / self.dataframe["ramTotal"]) * 100, 2)
-        self.dataframe["discoUsado"] = round(self.dataframe["discoUsado"].mean() / 1024**3, 2)
-        porcentagemDisco = round((self.dataframe["discoUsado"] / self.dataframe["discoTotal"]) * 100, 2)
+        self.dataframe["mediaRam"] = round(self.dataframe["ramUsada"].mean() / 1024**3, 2)
+        self.dataframe["percentualRam"] = round((self.dataframe["ramUsada"] / self.dataframe["ramTotal"]) * 100, 2)
+        self.dataframe["mediaDisco"] = round(self.dataframe["discoUsado"].mean() / 1024**3, 2)
+        self.dataframe["percentualDisco"] = round((self.dataframe["discoUsado"] / self.dataframe["discoTotal"]) * 100, 2)
 
         self.dataframe["bytesEnviados"] = round(self.dataframe["bytesEnviados"] / 1024**2, 2)
         self.dataframe["bytesRecebidos"] = round(self.dataframe["bytesRecebidos"] / 1024**2, 2)
