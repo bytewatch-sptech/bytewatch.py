@@ -1,6 +1,6 @@
 import boto3
 import pandas as pd
-import io
+import io, os
 import urllib.parse
 import datetime
 
@@ -12,6 +12,8 @@ class Leitura:
         
         raw_key = event['Records'][0]['s3']['object']['key']
         self.key = urllib.parse.unquote_plus(raw_key, encoding='utf-8')
+
+        self.nome_arquivo = os.path.basename(self.key)
         
         print(f"Buscando arquivo: {self.key}")
         
@@ -24,7 +26,7 @@ class Leitura:
             raise e
 
     def salvarArquivo(self, dataframe_final):
-        new_key = self.key.replace('raw/', 'trusted/').replace('.csv', '_tratado.csv')
+        new_key = self.key.replace('raw/', 'trusted/').replace('_raw.csv', '_trusted.csv')
         
         csv_buffer = io.StringIO()
         dataframe_final.to_csv(csv_buffer, index=False)
@@ -37,26 +39,23 @@ class Leitura:
         return new_key
 
     def agrupar_processos_por_nome(self):
-        df = pd.read_csv(self.arquivoProcessos, on_bad_lines='skip')
-        ultima_data = df["Data"].max()
-        df_ultimo = df[df["Data"] == ultima_data]
-        
         agrupado = {}
 
         data = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        for i, linha in df_ultimo.iterrows():
+        for i, linha in self.dataframe.iterrows():
             nome = linha["nomeProcesso"]
             
             if nome not in agrupado:
-                agrupado[nome] = {"instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": data}
+                agrupado[nome] = {"instancias": 0, "percentual_cpu": 0, "percentual_ram": 0, "mac_address": linha["macAddress"], "data": data}
             
             agrupado[nome]["instancias"] += 1
-            agrupado[nome]["cpu_total"] += linha["consumoCPUProcesso"]
-            agrupado[nome]["ram_total"] += linha["consumoRAMProcesso"]
+            agrupado[nome]["percentual_cpu"] += linha["consumoCPUProcesso"]
+            agrupado[nome]["percentual_ram"] += linha["consumoRAMProcesso"]
 
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
-        return ultima_data, dataframeProcessos.round(2)
+        dataframeProcessos.rename(columns={'index': 'nome_processo'}, inplace=True)
+        return dataframeProcessos.round(2)
 
     def formatarDadosComponentes(self):
 
@@ -94,21 +93,21 @@ class Leitura:
 
         return self.dataframe
     
-    def mainLoop(self):
-        dados = self.formatarDadosComponentes()
-        # self.salvarArquivo(dados, "leituraTratada.csv")
-        # ultima_data_processos, processos_agrupados = self.agrupar_processos_por_nome()
-        # self.salvarArquivo(processos_agrupados, "dadosProcessoTratado.csv")
-
 def lambda_handler(event, context):
     try:
-        processador = Leitura(event)
-        df_final = processador.formatarDadosComponentes()
-        caminho_salvo = processador.salvarArquivo(df_final)
+        leitura = Leitura(event)
+        tipo_arquivo = leitura.nome_arquivo.split("_")[0]
         
+        if (tipo_arquivo == "metricas"):
+            df_final = leitura.formatarDadosComponentes()
+            caminho_salvo = leitura.salvarArquivo(df_final)
+        elif (tipo_arquivo == "processos"):
+            df_final = leitura.agrupar_processos_por_nome()
+            caminho_salvo = leitura.salvarArquivo(df_final)
+
         return {
             'statusCode': 200,
-            'body': f'Sucesso! Arquivo salvo em: {caminho_salvo}'
+            'body': f'Arquivo salvo em: {caminho_salvo}'
         }
     except Exception as e:
         print(f"Erro: {str(e)}")

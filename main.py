@@ -6,7 +6,8 @@ from db import database
 import time
 
 capturaDadosComponentes = Escrita()
-# leituraDadosComponentes = Leitura()
+
+bucket = "learning-bucket-803426402363-us-east-1-an"
 
 macAddress = capturaDadosComponentes.macAddress
 if (not database.macAddressExiste(macAddress)):
@@ -18,13 +19,11 @@ else:
         dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
         arquivoMetricas = capturaDadosComponentes.arquivoMetricas
         capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
-        bucket = "learning-bucket-803426402363-us-east-1-an"
         capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, bucket, "", arquivoMetricas)
 
-        # dadosProcessos = capturaDadosComponentes.capturarProcessos()
-        # arquivoProcessos = capturaDadosComponentes.arquivoProcessos
-        # capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
-
-        # leituraDadosComponentes.mainLoop()
+        dadosProcessos = capturaDadosComponentes.capturarProcessos()
+        arquivoProcessos = capturaDadosComponentes.arquivoProcessos
+        capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, bucket, "", arquivoProcessos)
 
         time.sleep(10)
