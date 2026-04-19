@@ -1,4 +1,4 @@
-import time, datetime, os, uuid
+import time, datetime, os, uuid, glob, subprocess, boto3
 from re import findall
 import pandas as pd
 
@@ -14,57 +14,82 @@ class Leitura:
     def __init__(self):
         self.nomeArquivo = f"metricas_{self.obterMacAddress()}_raw.csv"
         self.arquivoProcessos = f"processos_{self.obterMacAddress()}_raw.csv"
+        self.bucket = "bytewatch-sptech"
+
+    def sync_to_s3(self, bucket_name, path, local_path="./"):
+        command = f"aws s3 sync s3://{bucket_name}/{path} {local_path}"
+        try:
+            subprocess.run(command, shell=True, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Erro na sincronização: {e}")
+
+    def salvarArquivoNoBucket(self, file, bucket, path, fileName):
+        s3 = boto3.client('s3')
+
+        s3.upload_file(
+            Filename=f'{file}',
+            Bucket=f'{bucket}',    
+            Key=f'{path}/{fileName}'
+        )
+
+    def agrupar_dados_csv(self, tipo_arquivo, arquivo_final):
+        todos_dataframes = []
+        if tipo_arquivo == "metricas":
+            caminho_arquivos = os.path.join("./", "metricas_*_raw.csv")
+        elif tipo_arquivo == "processos":
+            caminho_arquivos = os.path.join("./", "processos_*_raw.csv")
+        arquivos = glob.glob(caminho_arquivos)
+
+        if not arquivos:
+            print("Nenhum arquivo")
+            return
+
+        for arquivo in arquivos:
+            df_temp = pd.read_csv(arquivo, on_bad_lines='skip')
+            self.dataframe = df_temp 
+            
+            if tipo_arquivo == "metricas":
+                for _, linha in df_temp.iterrows():
+                    self.ultimo_dado = linha
+                    
+                    dados_formatados = self.formatarDadosComponentes()
+                    
+                    dados_limpos = {k: v[0] for k, v in dados_formatados.items()}
+                    todos_dataframes.append(dados_limpos)
+
+            elif tipo_arquivo == "processos":
+                dados_formatados = self.agrupar_processos_por_nome()
+                todos_dataframes.extend(dados_formatados.to_dict(orient='records'))
+
+        if todos_dataframes:
+            df_trusted = pd.DataFrame(todos_dataframes)
+            
+            df_trusted.to_csv(arquivo_final, index=False, encoding='utf-8')
 
     def obterMacAddress(self):
         mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
         print(f"MAC Address: {mac}")
         return mac
 
-    def salvarArquivo(self, dado, nomeArquivo):
-        dataframe = pd.DataFrame(dado)
-        if not os.path.exists(nomeArquivo):
-            dataframe.to_csv(nomeArquivo, index=False)
-        else:
-            dataframe.to_csv(nomeArquivo, mode="a", header=False, index=False)
-
     def agrupar_processos_por_nome(self):
-        df = pd.read_csv(self.arquivoProcessos, on_bad_lines='skip')
-        ultima_data = df["Data"].max()
-        df_ultimo = df[df["Data"] == ultima_data]
-        
         agrupado = {}
 
-        data = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        for i, linha in df_ultimo.iterrows():
+        for i, linha in self.dataframe.iterrows():
             nome = linha["nomeProcesso"]
-            
-            # Se o processo ainda não está no dicionário, cria com valores zerados
-            if nome not in agrupado:
-                agrupado[nome] = {"instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": data}
-            
-            # Soma os valores
-            agrupado[nome]["instancias"] += 1
-            agrupado[nome]["cpu_total"] += linha["consumoCPUProcesso"]
-            agrupado[nome]["ram_total"] += linha["consumoRAMProcesso"]
+            dataProcesso = linha["Data"]
+            chave = (nome, dataProcesso)
 
-        # Converte o dicionário para DataFrame e arredonda
+            if chave not in agrupado:
+                agrupado[chave] = {"nome_processo": linha["nomeProcesso"], "instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": dataProcesso}
+
+            agrupado[chave]["instancias"] += 1
+            agrupado[chave]["cpu_total"] += linha["consumoCPUProcesso"]
+            agrupado[chave]["ram_total"] += linha["consumoRAMProcesso"]
+
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
-        return ultima_data, dataframeProcessos.round(2)
-
-    def buscarUltimasInformacoes(self, arquivo):
-        df = pd.read_csv(arquivo, on_bad_lines='skip')
-        self.dataframe = df
-
-        ultimo = df.iloc[-1]
-
-        if ultimo["horario"] == self.ultimo_horario:
-            print(f"sem novos dados desde {self.ultimo_horario}, aguardando próxima leitura...")
-            return False
-        else:
-            self.ultimo_horario = ultimo["horario"]
-            self.ultimo_dado = ultimo
-            return True
+        dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1)
+        dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
+        return dataframeProcessos.round(2)
         
     def formatarDadosComponentes(self):
         horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -99,39 +124,15 @@ class Leitura:
         velocidadeDownload = round(self.ultimo_dado["velocidadeDownload"])
         velocidadeUpload = round(self.ultimo_dado["velocidadeUpload"])
 
-        dados_resultados = {
-            "Horário": [horas],
-            "macAddress": [macAddress],
-            "nome_maquina": [nome_maquina],
-            "processador": [processador],
-            "cpuPorcentagem": [cpuPorcentagem],
-            "cpuNucleosFisicos": [cpuNucleosFisicos],
-            "cpuNucleosLogicos": [cpuNucleosLogicos],
-            "cpuTempoUser": [cpuTempoUser],
-            "cpuTempoSistema": [cpuTempoSistema],
-            "cpuTempoInativo": [cpuTempoInativo],
-            "ramLivre": [ramLivre],
-            "ramUsada": [ramUsada],
-            "ramTotal": [ramTotal],
-            "discoLivre": [discoLivre],
-            "discoUsado": [discoUsado],
-            "discoTotal": [discoTotal],
-            "mediaRamGB": [mediaRam],
-            "mediaDiscoGB": [mediaDisco],
-            "porcentagemRam": [porcentagemRam],
-            "porcentagemDisco": [porcentagemDisco],
-            "megabytesEnviados": [megabytesEnviados],
-            "megabytesRecebidos": [megabytesRecebidos],
-            "velocidadeDownload": [velocidadeDownload],
-            "velocidadeUpload": [velocidadeUpload]
-        }
+        dados_resultados = {"Horário": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload]}
 
         return dados_resultados
     
     def mainLoop(self):
-        self.buscarUltimasInformacoes(self.nomeArquivo)
-        dados = self.formatarDadosComponentes()
-        self.salvarArquivo(dados, "leituraTratada.csv")
-        ultima_data_processos, processos_agrupados = self.agrupar_processos_por_nome()
-        self.salvarArquivo(processos_agrupados, "dadosProcessoTratado.csv")
+        self.sync_to_s3(self.bucket, "raw")
+        self.agrupar_dados_csv("metricas", "metricas_trusted.csv")
+        self.agrupar_dados_csv("processos", "processos_trusted.csv")
+        self.salvarArquivoNoBucket("processos_trusted.csv", self.bucket, "trusted", "processos_trusted.csv")
+        self.salvarArquivoNoBucket("metricas_trusted.csv", self.bucket, "trusted", "metricas_trusted.csv")
+        
 

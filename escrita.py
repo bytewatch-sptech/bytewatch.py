@@ -58,16 +58,19 @@ class Escrita():
         return bytesRecebidos, bytesEnviados, velocidadeDownload, velocidadeUpload
     
     def capturarProcessos(self):
+        num_cpus = psutil.cpu_count()
+        total_ram = psutil.virtual_memory().total
         dadosProcesso = []
         horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent']))
+        processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'memory_full_info']))
         quantidadeProcessos = len(processos_info)
         idProcessos = [proc.info.get('pid') for proc in processos_info]
         nomeProcesso = [proc.info.get('name') for proc in processos_info]
         usuarioProcesso = [proc.info.get('username') for proc in processos_info]
-        consumoCPUProcesso = [proc.info.get('cpu_percent', 0) for proc in processos_info]
-        consumoRAMProcesso = [proc.info.get('memory_percent', 0) for proc in processos_info]
-
+        consumoCPUProcesso = [(proc.info.get('cpu_percent', 0)) / num_cpus for proc in processos_info]
+        
+        consumoRAMProcesso = [((proc.info.get('memory_full_info').uss if proc.info.get('memory_full_info') else 0) / total_ram) * 100 for proc in processos_info]
+        
         for i in range(len(idProcessos)):
             processos_dict = {"macAddress": self.macAddress, "quantidadeProcessos": quantidadeProcessos, "Data": horas, "idProcessos": idProcessos[i], "nomeProcesso": nomeProcesso[i], "usuarioProcesso": usuarioProcesso[i], "consumoCPUProcesso": consumoCPUProcesso[i], "consumoRAMProcesso": consumoRAMProcesso[i]}
             dadosProcesso.append(processos_dict)

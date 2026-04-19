@@ -8,20 +8,23 @@ import time
 capturaDadosComponentes = Escrita()
 leituraDadosComponentes = Leitura()
 
-while True:
-    macAddress = capturaDadosComponentes.macAddress
-    if (not database.macAddressExiste(macAddress)):
-        print(f"Servidor com mac address {macAddress} não está cadastrado!")
-        break
+macAddress = capturaDadosComponentes.macAddress
+if (not database.macAddressExiste(macAddress)):
+    print(f"Servidor com mac address {macAddress} não está cadastrado!")
 
-    dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
-    arquivoMetricas = capturaDadosComponentes.arquivoMetricas
-    capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+else:
+    while True:
+        dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
+        arquivoMetricas = capturaDadosComponentes.arquivoMetricas
+        capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech", "raw", arquivoMetricas)
 
-    dadosProcessos = capturaDadosComponentes.capturarProcessos()
-    arquivoProcessos = capturaDadosComponentes.arquivoProcessos
-    capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        dadosProcessos = capturaDadosComponentes.capturarProcessos()
+        arquivoProcessos = capturaDadosComponentes.arquivoProcessos
+        capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech", "raw", arquivoProcessos)
 
-    leituraDadosComponentes.mainLoop()
 
-    time.sleep(10)
+        leituraDadosComponentes.mainLoop()
+
+        time.sleep(10)
