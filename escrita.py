@@ -103,8 +103,14 @@ class Escrita():
         discoUsado = (psutil.disk_usage("/").used)
         discoTotal = (psutil.disk_usage("/").total)
 
+        io_disco1 = psutil.disk_io_counters()
+        time.sleep(1) 
+        io_disco2 = psutil.disk_io_counters()
+        velocidade_leitura = (io_disco2.read_bytes - io_disco1.read_bytes)
+        velocidade_escrita = (io_disco2.write_bytes - io_disco1.write_bytes)
+
         bytesRecebidos, bytesEnviados, velocidadeDownload, velocidadeUpload, droppedPackets, conexoes_ativas = self.pegarVelocidadeInternet()
 
         print(f"|    Escrita de métricas\n|    Horário: {horas}\n|    Endereço MAC: {self.macAddress}\n|    Nome da máquina: {nome_maquina}\n|\n======================================\n\n                CPU\n\nProcessador: {processador}\n\nCPU Porcentagem: {cpuPorcentagem}%\nCPU Núcleos Físicos: {cpuNucleosFisicos}\nCPU Núcleos Lógicos: {cpuNucleosLogicos}\n\nCPU Tempo Usuário: {cpuTempoUser}\nCPU Tempo Sistema: {cpuTempoSistema}\nCPU Tempo Inativo: {cpuTempoInativo}\n\n----------------------------------\n                RAM\n\nRAM Usada: {ramUsada}\nRAM Total: {ramTotal}\nRAM Livre: {ramLivre}\n\n----------------------------------\n                DISCO\n\nDisco Usado: {discoUsado}\nDisco Total: {discoTotal}\nDisco Livre: {discoLivre}\n\n----------------------------------\n                INTERNET\n\nTotal Bytes Enviados: {bytesEnviados}\nTotal Bytes Recebidos: {bytesRecebidos}\nVelocidade Download: {velocidadeDownload} B/s\nvelocidade Upload: {velocidadeUpload} B/s\n\n======================================")
 
-        return {"horario": [horas], "macAddress": self.macAddress, "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "ramLivre": [ramLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "discoLivre": [discoLivre], "bytesEnviados": [bytesEnviados], "bytesRecebidos": [bytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoes_ativas]}
+        return {"horario": [horas], "macAddress": self.macAddress, "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "ramLivre": [ramLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "discoLivre": [discoLivre], "velocidadeEscrita": [velocidade_escrita], "velocidadeLeitura": [velocidade_leitura], "bytesEnviados": [bytesEnviados], "bytesRecebidos": [bytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoes_ativas]}
