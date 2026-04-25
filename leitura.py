@@ -127,15 +127,18 @@ class Leitura:
         velocidadeDownload = round(self.ultimo_dado["velocidadeDownload"] / 1024**2, 2)
         velocidadeUpload = round(self.ultimo_dado["velocidadeUpload"] / 1024**2, 2)
 
-        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
+        velocidadeEscrita = round(self.ultimo_dado["velocidadeEscrita"] / 1024**2, 2)
+        velocidadeLeitura = round(self.ultimo_dado["velocidadeLeitura"] / 1024**2, 2)
+
+        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
 
         return dados_resultados
     
     def mainLoop(self):
-        self.sync_to_s3(self.bucket, "raw")
+        # self.sync_to_s3(self.bucket, "raw")
         self.agrupar_dados_csv("metricas", "metricas_trusted.csv")
         self.agrupar_dados_csv("processos", "processos_trusted.csv")
-        self.salvarArquivoNoBucket("processos_trusted.csv", self.bucket, "trusted", "processos_trusted.csv")
-        self.salvarArquivoNoBucket("metricas_trusted.csv", self.bucket, "trusted", "metricas_trusted.csv")
+        # self.salvarArquivoNoBucket("processos_trusted.csv", self.bucket, "trusted", "processos_trusted.csv")
+        # self.salvarArquivoNoBucket("metricas_trusted.csv", self.bucket, "trusted", "metricas_trusted.csv")
         
 
