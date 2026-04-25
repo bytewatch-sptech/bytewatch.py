@@ -43,12 +43,16 @@ class Client:
                 "porcentagemDisco": ultima_linha.porcentagemDisco,
                 "discoTotal": ultima_linha.discoTotal,
                 "discoUsado": ultima_linha.discoUsado,
+                "velocidadeLeitura": int(ultima_linha.velocidadeLeitura),
+                "velocidadeEscrita": int(ultima_linha.velocidadeEscrita),
                 "kpi": {
                     "percentualUsado": ultima_linha.porcentagemDisco,
                     "percentualLivre": 100 - ultima_linha.porcentagemDisco
                 },
                 "grafico": {
                     "percentualUsado": df_maquina["porcentagemDisco"].tolist(),
+                    "velocidadeEscrita": df_maquina["velocidadeEscrita"].tolist(),
+                    "velocidadeLeitura": df_maquina["velocidadeLeitura"].tolist(),
                     "momento": df_maquina["horario"].tolist(),
                 }
             })
