@@ -88,13 +88,16 @@ class Leitura:
 
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
         dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1)
-        dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
+        # dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
         return dataframeProcessos.round(2)
         
     def formatarDadosComponentes(self):
-        horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        horas = self.ultimo_dado["horario"]
         nome_maquina = self.ultimo_dado["nome_maquina"]
         processador = self.ultimo_dado["processador"]
+
+        droppedPackets = self.ultimo_dado["droppedPackets"]
+        conexoesAtivas = self.ultimo_dado["conexoesAtivas"]
 
         macAddress = self.ultimo_dado["macAddress"]
 
@@ -121,10 +124,10 @@ class Leitura:
 
         megabytesEnviados = round(self.ultimo_dado["bytesEnviados"] / 1024**2, 2)
         megabytesRecebidos = round(self.ultimo_dado["bytesRecebidos"] / 1024**2, 2)
-        velocidadeDownload = round(self.ultimo_dado["velocidadeDownload"])
-        velocidadeUpload = round(self.ultimo_dado["velocidadeUpload"])
+        velocidadeDownload = round(self.ultimo_dado["velocidadeDownload"] / 1024**2, 2)
+        velocidadeUpload = round(self.ultimo_dado["velocidadeUpload"] / 1024**2, 2)
 
-        dados_resultados = {"Horário": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload]}
+        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
 
         return dados_resultados
     
