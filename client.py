@@ -8,7 +8,17 @@ class Client:
         self.df_metrica = pd.read_csv("metricas_trusted.csv", on_bad_lines='skip')
         self.df_processos = pd.read_csv("processos_trusted.csv", on_bad_lines='skip')
 
-    def tratarMetricas(self):
+    def dashboardAlertas(self):
+        self.salvarArquivo("dashboard_alertas.json")
+
+    def dashboardGestor(self):
+        self.salvarArquivo("dashboard_gestor.json")
+
+
+    def dashboardServidoresGerais(self):
+        self.salvarArquivo("dashboard_geral.json")
+
+    def dashboardServidorEspecifico(self):
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
             ultima_linha = df_maquina.iloc[-1]
@@ -93,9 +103,11 @@ class Client:
                     "momento": df_maquina["horario"].tolist(),
                 }
             })
+        self.salvarArquivo("dashboard_especifica.json")
+        self.conteudo = {}
 
 
-    def tratarProcessos(self):
+    def dashboardProcessos(self):
         for mac in self.df_processos["mac_address"].unique():
             df_maquina = self.df_processos[self.df_processos["mac_address"] == mac]
             
@@ -127,13 +139,20 @@ class Client:
                 }
                 if int(ultima_linha["cpu_total"]) > 1 or int(ultima_linha["ram_total"] > 1):
                     self.conteudo[mac]["processos"].append(dadoProcesso)
+        self.salvarArquivo("dashboard_processos.json")
+        self.conteudo = {}
 
-    def salvarArquivo(self):
-        with open("client.json", 'w', encoding='utf-8') as f:
+    def salvarArquivo(self, nomeArquivo):
+        with open(nomeArquivo, 'w', encoding='utf-8') as f:
             json.dump(self.conteudo, f, indent=4, ensure_ascii=False)
+
+    def mainLoop(self):
+        self.dashboardAlertas()
+        self.dashboardGestor()
+        self.dashboardServidoresGerais()
+        self.dashboardServidorEspecifico()
+        self.dashboardProcessos()
     
 
 client = Client()
-client.tratarMetricas()
-client.tratarProcessos()
-client.salvarArquivo()
+client.mainLoop()
