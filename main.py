@@ -6,10 +6,10 @@ from db import database
 import time
 
 capturaDadosComponentes = Escrita()
-leituraDadosComponentes = Leitura()
+# leituraDadosComponentes = Leitura()
 
 macAddress = capturaDadosComponentes.macAddress
-if (not database.macAddressExiste(macAddress)):
+if (database.macAddressExiste(macAddress)):
     print(f"Servidor com mac address {macAddress} não está cadastrado!")
 
 else:
@@ -25,6 +25,6 @@ else:
         capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech", "raw", arquivoProcessos)
 
 
-        leituraDadosComponentes.mainLoop()
+        # leituraDadosComponentes.mainLoop()
 
         time.sleep(10)
