@@ -1,75 +1,77 @@
 import time, datetime, os, uuid, glob, subprocess, boto3
 from re import findall
 import pandas as pd
+import io 
+import urllib.parse 
 
 class Leitura:
-    ultimo_horario = None
-    ultimo_dado = None
-    dataframe = None
-    nomeArquivo = ""
-    arquivoRaw = ""
-    tipoArquivo = ""
-    arquivoProcessos = ""
+    def __init__(self, event): 
+        self.bucket = event['Records'][0]['s3']['bucket']['name'] 
+        raw_key = event['Records'][0]['s3']['object']['key'] 
+        self.arquivoRaw = urllib.parse.unquote_plus(raw_key, encoding='utf-8') 
+        self.nomeArquivo = os.path.basename(self.arquivoRaw) 
 
-    def __init__(self):
-        self.nomeArquivo = f"metricas_{self.obterMacAddress()}_raw.csv"
-        self.arquivoProcessos = f"processos_{self.obterMacAddress()}_raw.csv"
-        self.bucket = "bytewatch-sptech"
-
-    def sync_to_s3(self, bucket_name, path, local_path="./"):
-        command = f"aws s3 sync s3://{bucket_name}/{path} {local_path}"
+        s3 = boto3.client('s3')
         try:
-            subprocess.run(command, shell=True, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Erro na sincronização: {e}")
+            response = s3.get_object(Bucket=self.bucket, Key=self.arquivoRaw) 
+            self.dataframe = pd.read_csv(response['Body'], on_bad_lines='skip') 
+        except Exception as e:
+            self.dataframe = None
+            print(f"Erro na leitura do S3: {e}")
 
-    def salvarArquivoNoBucket(self, file, bucket, path, fileName):
+    def salvarArquivoNoBucket(self, dataframe_final, bucket, path, fileName): 
         s3 = boto3.client('s3')
 
-        s3.upload_file(
-            Filename=f'{file}',
+        if "metricas" in fileName:
+            dataframe_final = dataframe_final.drop_duplicates(subset=['horario', 'macAddress'], keep='last')
+        else:
+            dataframe_final = dataframe_final.drop_duplicates(subset=['nome_processo', 'data', 'mac_address'], keep='last')
+
+        csv_buffer = io.StringIO()
+        dataframe_final.to_csv(csv_buffer, index=False, encoding='utf-8')
+
+        s3.put_object( 
             Bucket=f'{bucket}',    
-            Key=f'{path}/{fileName}'
+            Key=f'{path}/{fileName}',
+            Body=csv_buffer.getvalue() 
         )
+        
 
     def agrupar_dados_csv(self, tipo_arquivo, arquivo_final):
         todos_dataframes = []
+        
+        if self.dataframe is None: 
+            print("Nenhum arquivo para processar")
+            return None 
+
+        df_temp = self.dataframe 
+        
         if tipo_arquivo == "metricas":
-            caminho_arquivos = os.path.join("./", "metricas_*_raw.csv")
+            for _, linha in df_temp.iterrows():
+                self.ultimo_dado = linha
+                
+                dados_formatados = self.formatarDadosComponentes()
+                
+                dados_limpos = {k: v[0] for k, v in dados_formatados.items()}
+                todos_dataframes.append(dados_limpos)
+
         elif tipo_arquivo == "processos":
-            caminho_arquivos = os.path.join("./", "processos_*_raw.csv")
-        arquivos = glob.glob(caminho_arquivos)
-
-        if not arquivos:
-            print("Nenhum arquivo")
-            return
-
-        for arquivo in arquivos:
-            df_temp = pd.read_csv(arquivo, on_bad_lines='skip')
-            self.dataframe = df_temp 
-            
-            if tipo_arquivo == "metricas":
-                for _, linha in df_temp.iterrows():
-                    self.ultimo_dado = linha
-                    
-                    dados_formatados = self.formatarDadosComponentes()
-                    
-                    dados_limpos = {k: v[0] for k, v in dados_formatados.items()}
-                    todos_dataframes.append(dados_limpos)
-
-            elif tipo_arquivo == "processos":
-                dados_formatados = self.agrupar_processos_por_nome()
-                todos_dataframes.extend(dados_formatados.to_dict(orient='records'))
+            dados_formatados = self.agrupar_processos_por_nome()
+            todos_dataframes.extend(dados_formatados.to_dict(orient='records'))
 
         if todos_dataframes:
-            df_trusted = pd.DataFrame(todos_dataframes)
+            df_novo = pd.DataFrame(todos_dataframes) 
             
-            df_trusted.to_csv(arquivo_final, index=False, encoding='utf-8')
+            s3 = boto3.client('s3')
+            try:
+                response_trusted = s3.get_object(Bucket=self.bucket, Key=f"trusted/{arquivo_final}")
+                df_trusted_existente = pd.read_csv(response_trusted['Body'], on_bad_lines='skip')
+                
+                df_final = pd.concat([df_trusted_existente, df_novo], ignore_index=True) 
+            except s3.exceptions.NoSuchKey:
+                df_final = df_novo 
 
-    def obterMacAddress(self):
-        mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
-        print(f"MAC Address: {mac}")
-        return mac
+            return df_final 
 
     def agrupar_processos_por_nome(self):
         agrupado = {}
@@ -87,8 +89,7 @@ class Leitura:
             agrupado[chave]["ram_total"] += linha["consumoRAMProcesso"]
 
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
-        dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1)
-        # dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
+        dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1, errors='ignore')
         return dataframeProcessos.round(2)
         
     def formatarDadosComponentes(self):
@@ -130,15 +131,43 @@ class Leitura:
         velocidadeEscrita = round(self.ultimo_dado["velocidadeEscrita"] / 1024**2, 2)
         velocidadeLeitura = round(self.ultimo_dado["velocidadeLeitura"] / 1024**2, 2)
 
-        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
+        dados_resultados = {
+            "horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], 
+            "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], 
+            "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], 
+            "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], 
+            "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], 
+            "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], 
+            "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], 
+            "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], 
+            "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], 
+            "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]
+        }
 
         return dados_resultados
     
     def mainLoop(self):
-        # self.sync_to_s3(self.bucket, "raw")
-        self.agrupar_dados_csv("metricas", "metricas_trusted.csv")
-        self.agrupar_dados_csv("processos", "processos_trusted.csv")
-        # self.salvarArquivoNoBucket("processos_trusted.csv", self.bucket, "trusted", "processos_trusted.csv")
-        # self.salvarArquivoNoBucket("metricas_trusted.csv", self.bucket, "trusted", "metricas_trusted.csv")
-        
+        if self.dataframe is None:
+            return
 
+        if "metricas" in self.nomeArquivo:
+            df_final = self.agrupar_dados_csv("metricas", "metricas_trusted.csv")
+            if df_final is not None:
+                self.salvarArquivoNoBucket(df_final, self.bucket, "trusted", "metricas_trusted.csv") 
+                
+        elif "processos" in self.nomeArquivo:
+            df_final = self.agrupar_dados_csv("processos", "processos_trusted.csv")
+            if df_final is not None:
+                self.salvarArquivoNoBucket(df_final, self.bucket, "trusted", "processos_trusted.csv") 
+
+def lambda_handler(event, context):
+    try:
+        app = Leitura(event)
+        app.mainLoop()
+        return {
+            'statusCode': 200, 
+            'body': 'Arquivo processado, append e deduplicação realizados com sucesso.'
+        }
+    except Exception as e:
+        print(f"Erro no processamento: {str(e)}")
+        raise e
