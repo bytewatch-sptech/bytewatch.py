@@ -2,24 +2,28 @@ import mysql.connector
 
 class Database:
     def __init__(self):
-        self.db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="0262",
-        database="monitoramento"
-        )
+        self.config = {
+            "host": "localhost",
+            "user": "root",
+            "password": "0262", 
+            "database": "monitoramento"
+        }
 
-        self.conn = self.db.cursor()
-
-    def macAddressExiste(self, macAddress):
-        self.conn.execute(f"SELECT * FROM servidor WHERE mac_address = '{macAddress}'")
-        resultado = self.conn.fetchall()
-        servidorExiste = len(resultado) > 0
-        self.fechar_conexao()
-        return servidorExiste
-
-    def fechar_conexao(self):
-        self.conn.close()
-        self.db.close()
+    def macAddressExiste(self, mac_address):
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+        
+        try:
+            sql = f"SELECT mac_address FROM servidor WHERE mac_address = '{mac_address}'"
+            cursor.execute(sql)
+            
+            resultado = cursor.fetchone()
+            
+            servidorExiste = resultado is not None
+            return servidorExiste
+        
+        finally:
+            cursor.close()
+            db.close()
 
 database = Database()
