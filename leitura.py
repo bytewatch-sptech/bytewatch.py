@@ -90,6 +90,7 @@ class Leitura:
 
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
         dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1, errors='ignore')
+        dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
         return dataframeProcessos.round(2)
         
     def formatarDadosComponentes(self):

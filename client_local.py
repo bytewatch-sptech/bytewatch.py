@@ -18,9 +18,11 @@ class Client:
     def dashboardServidoresGerais(self):
         self.salvarArquivo("dashboard_geral.json")
 
-    def dashboardServidorEspecifico(self):
+    def dashboardRam(self):
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            df_processos = self.df_processos[self.df_processos["mac_address"] == mac]
+
             ultima_linha = df_maquina.iloc[-1]
             
             if mac not in self.conteudo:
@@ -28,8 +30,7 @@ class Client:
                     "metricas": [],
                     "processos": []
                 }
-            
-            self.conteudo[mac]["metricas"].append({
+            self.conteudo[mac]["metricas"] = {
                 "tipoDado": "ram",
                 "macAddress": mac,
                 "ultimaColeta": ultima_linha.horario,
@@ -41,86 +42,15 @@ class Client:
                     "percentualLivre": 100 - ultima_linha.porcentagemRam
                 },
                 "grafico": {
-                    "percentualUsado": df_maquina["porcentagemRam"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
+                    "percentualUsado": df_maquina["porcentagemRam"].tail(7).tolist(),
+                    "momento": df_maquina["horario"].tail(7).tolist(),
                 }
-            })
+            }
 
-            self.conteudo[mac]["metricas"].append({
-                "tipoDado": "disco",
-                "macAddress": mac,
-                "ultimaColeta": ultima_linha.horario,
-                "porcentagemDisco": ultima_linha.porcentagemDisco,
-                "discoTotal": ultima_linha.discoTotal,
-                "discoUsado": ultima_linha.discoUsado,
-                "velocidadeLeitura": int(ultima_linha.velocidadeLeitura),
-                "velocidadeEscrita": int(ultima_linha.velocidadeEscrita),
-                "kpi": {
-                    "percentualUsado": ultima_linha.porcentagemDisco,
-                    "percentualLivre": 100 - ultima_linha.porcentagemDisco
-                },
-                "grafico": {
-                    "percentualUsado": df_maquina["porcentagemDisco"].tolist(),
-                    "velocidadeEscrita": df_maquina["velocidadeEscrita"].tolist(),
-                    "velocidadeLeitura": df_maquina["velocidadeLeitura"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
-                }
-            })
-
-            self.conteudo[mac]["metricas"].append({
-                "tipoDado": "cpu",
-                "macAddress": mac,
-                "ultimaColeta": ultima_linha.horario,
-                "processador": ultima_linha.processador,
-                "porcentagemCpu": ultima_linha.cpuPorcentagem,
-                "coresLogicos": int(ultima_linha.cpuNucleosLogicos),
-                "kpi": {
-                    "percentualUsado": ultima_linha.cpuPorcentagem,
-                    "percentualLivre": 100 - ultima_linha.cpuPorcentagem
-                },
-                "grafico": {
-                    "percentualUsado": df_maquina["cpuPorcentagem"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
-                }
-            })
-
-            self.conteudo[mac]["metricas"].append({
-                "tipoDado": "rede",
-                "macAddress": mac,
-                "ultimaColeta": ultima_linha.horario,
-                "totalMegabytesEnviados": ultima_linha.megabytesEnviados,
-                "totalMegabytesRecebidos": ultima_linha.megabytesRecebidos,
-                "megabytesEnviados": ultima_linha.velocidadeUpload,
-                "megabytesRecebidos": ultima_linha.velocidadeDownload,
-                "droppedPackets": int(ultima_linha.droppedPackets),
-                "conexoesAtivas": int(ultima_linha.conexoesAtivas),
-                "kpi": {
-                    
-                },
-                "grafico": {
-                    "megabytesEnviados": df_maquina["velocidadeUpload"].tolist(),
-                    "megabytesRecebidos": df_maquina["velocidadeDownload"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
-                }
-            })
-        self.salvarArquivo("dashboard_especifica.json")
-        self.conteudo = {}
-
-
-    def dashboardProcessos(self):
-        for mac in self.df_processos["mac_address"].unique():
-            df_maquina = self.df_processos[self.df_processos["mac_address"] == mac]
-            
-            if mac not in self.conteudo:
-                self.conteudo[mac] = {
-                    "metricas": [],
-                    "processos": []
-                }
-            
-            processos_unicos = df_maquina["nome_processo"].unique()
+            processos_unicos = df_processos["nome_processo"].unique()
             
             for nome in processos_unicos:
-                df_historico_processo = df_maquina[df_maquina["nome_processo"] == nome]
+                df_historico_processo = df_processos[df_processos["nome_processo"] == nome]
                 ultima_linha = df_historico_processo.iloc[-1]
                 
                 dadoProcesso = {
@@ -129,18 +59,12 @@ class Client:
                     "nomeProcesso": nome,
                     "ultimaColeta": ultima_linha["data"],
                     "instancias": int(ultima_linha["instancias"]),
-                    "cpuAtual": ultima_linha["cpu_total"],
                     "ramAtual": ultima_linha["ram_total"],
-                    "grafico": {
-                        "consumoRam": df_historico_processo["ram_total"].tolist(),
-                        "consumoCpu": df_historico_processo["cpu_total"].tolist(),
-                        "momento": df_historico_processo["data"].tolist()
-                    }
                 }
-                if int(ultima_linha["cpu_total"]) > 1 or int(ultima_linha["ram_total"] > 1):
+                if int(ultima_linha["ram_total"] > 5):
                     self.conteudo[mac]["processos"].append(dadoProcesso)
-        self.salvarArquivo("dashboard_processos.json")
-        self.conteudo = {}
+
+        self.salvarArquivo("dashboard_ram.json")
 
     def salvarArquivo(self, nomeArquivo):
         with open(nomeArquivo, 'w', encoding='utf-8') as f:
@@ -150,7 +74,6 @@ class Client:
         self.dashboardAlertas()
         self.dashboardGestor()
         self.dashboardServidoresGerais()
-        self.dashboardServidorEspecifico()
-        self.dashboardProcessos()
+        self.dashboardRam()
     
 

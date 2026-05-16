@@ -72,9 +72,8 @@ class Escrita():
         nomeProcesso = [proc.info.get('name') for proc in processos_info]
         usuarioProcesso = [proc.info.get('username') for proc in processos_info]
         consumoCPUProcesso = [(proc.info.get('cpu_percent', 0)) / num_cpus for proc in processos_info]
-        
-        consumoRAMProcesso = [((proc.info.get('memory_full_info').uss if proc.info.get('memory_full_info') else 0) / total_ram) * 100 for proc in processos_info]
-        
+        consumoRAMProcesso = [((proc.info.get('memory_full_info').rss if proc.info.get('memory_full_info') else 0) / total_ram) * 100 for proc in processos_info]
+
         for i in range(len(idProcessos)):
             processos_dict = {"macAddress": self.macAddress, "quantidadeProcessos": quantidadeProcessos, "Data": horas, "idProcessos": idProcessos[i], "nomeProcesso": nomeProcesso[i], "usuarioProcesso": usuarioProcesso[i], "consumoCPUProcesso": consumoCPUProcesso[i], "consumoRAMProcesso": consumoRAMProcesso[i]}
             dadosProcesso.append(processos_dict)
