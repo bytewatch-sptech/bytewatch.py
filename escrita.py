@@ -66,17 +66,36 @@ class Escrita():
         total_ram = psutil.virtual_memory().total
         dadosProcesso = []
         horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_percent', 'memory_full_info']))
+        
+        processos_info = list(psutil.process_iter(['pid', 'name', 'username', 'cpu_percent', 'memory_full_info', 'status']))
         quantidadeProcessos = len(processos_info)
-        idProcessos = [proc.info.get('pid') for proc in processos_info]
-        nomeProcesso = [proc.info.get('name') for proc in processos_info]
-        usuarioProcesso = [proc.info.get('username') for proc in processos_info]
-        consumoCPUProcesso = [(proc.info.get('cpu_percent', 0)) / num_cpus for proc in processos_info]
-        consumoRAMProcesso = [((proc.info.get('memory_full_info').rss if proc.info.get('memory_full_info') else 0) / total_ram) * 100 for proc in processos_info]
 
-        for i in range(len(idProcessos)):
-            processos_dict = {"macAddress": self.macAddress, "quantidadeProcessos": quantidadeProcessos, "Data": horas, "idProcessos": idProcessos[i], "nomeProcesso": nomeProcesso[i], "usuarioProcesso": usuarioProcesso[i], "consumoCPUProcesso": consumoCPUProcesso[i], "consumoRAMProcesso": consumoRAMProcesso[i]}
-            dadosProcesso.append(processos_dict)
+        for proc in processos_info:
+            try:
+                info = proc.info
+                mem_info = info.get('memory_full_info')
+                
+                status_capturado = info.get('status')
+                status = "Ativo" if status_capturado in ['running', 'sleeping'] else "Inativo"
+                
+                uso_cpu = (info.get('cpu_percent', 0) or 0) / num_cpus
+                uso_ram = ((mem_info.rss if mem_info else 0) / total_ram) * 100
+
+                processos_dict = {
+                    "macAddress": self.macAddress, 
+                    "quantidadeProcessos": quantidadeProcessos, 
+                    "Data": horas, 
+                    "idProcessos": info.get('pid'), 
+                    "nomeProcesso": info.get('name'), 
+                    "usuarioProcesso": info.get('username'), 
+                    "consumoCPUProcesso": round(uso_cpu, 2), 
+                    "consumoRAMProcesso": round(uso_ram, 2),
+                    "status": status 
+                }
+                dadosProcesso.append(processos_dict)
+                
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
         
         return dadosProcesso
 
