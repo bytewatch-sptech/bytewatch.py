@@ -82,7 +82,7 @@ class Leitura:
             chave = (nome, dataProcesso)
 
             if chave not in agrupado:
-                agrupado[chave] = {"nome_processo": linha["nomeProcesso"], "instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": dataProcesso}
+                agrupado[chave] = {"pid": linha["idProcessos"], "status": linha["status"], "nome_processo": linha["nomeProcesso"], "instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": dataProcesso}
 
             agrupado[chave]["instancias"] += 1
             agrupado[chave]["cpu_total"] += linha["consumoCPUProcesso"]

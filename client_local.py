@@ -55,6 +55,8 @@ class Client:
                 
                 dadoProcesso = {
                     "tipoDado": "processo",
+                    "pid": int(ultima_linha["pid"]),
+                    "status": ultima_linha["status"],
                     "macAddress": mac,
                     "nomeProcesso": nome,
                     "ultimaColeta": ultima_linha["data"],
