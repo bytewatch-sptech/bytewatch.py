@@ -8,7 +8,6 @@ import time
 
 capturaDadosComponentes = Escrita()
 leituraDadosComponentes = Leitura()
-client = Client()
 
 
 macAddress = capturaDadosComponentes.macAddress
@@ -29,6 +28,7 @@ else:
 
 
         leituraDadosComponentes.mainLoop()
+        client = Client()
         client.mainLoop()
 
         time.sleep(10)
