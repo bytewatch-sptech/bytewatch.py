@@ -71,9 +71,23 @@ class Client:
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
             df_processos = self.df_processos[self.df_processos["mac_address"] == mac]
-
             df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
             df_maquina = df_maquina.sort_values(by='horario')
+
+            data_ultima_captura = df_maquina['horario'].max().normalize() 
+            data_ontem = data_ultima_captura - pd.Timedelta(days=1)       
+
+            df_hoje = df_maquina[df_maquina['horario'] >= data_ultima_captura]
+            df_ontem = df_maquina[(df_maquina['horario'] >= data_ontem) & (df_maquina['horario'] < data_ultima_captura)]
+
+            pico_hoje = 0
+            pico_ontem = 0
+            if (len(df_hoje) > 0):
+                pico_hoje = int(round(df_hoje['porcentagemRam'].max(), 0))
+            if (len(df_ontem) > 0):
+                pico_ontem = int(round(df_ontem['porcentagemRam'].max(), 0))
+
+            variacao = pico_hoje - pico_ontem
 
             ultima_linha = df_maquina.iloc[-1]
 
@@ -91,12 +105,17 @@ class Client:
                 "porcentagemRam": ultima_linha.porcentagemRam,
                 "ramTotal": ultima_linha.ramTotal,
                 "ramUsada": ultima_linha.ramUsada,
-                "kpi": {
+                "kpiUso": {
                     "percentualUsado": ultima_linha.porcentagemRam,
                     "percentualLivre": 100 - ultima_linha.porcentagemRam
                 },
-                "kpi-esgotamento": {
-                    "tempo_restante": tempo_esgotamento
+                "kpiPico": {
+                    "picoHoje": pico_hoje,
+                    "picoOntem": pico_ontem,
+                    "variacao": variacao
+                },
+                "kpiEsgotamento": {
+                    "tempoRestante": tempo_esgotamento
                 },
                 "grafico": {
                     "percentualUsado": df_maquina["porcentagemRam"].tail(7).tolist(),
