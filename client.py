@@ -39,7 +39,44 @@ class Client:
         self.salvarArquivo("dashboard_gestor.json")
 
     def dashboardServidoresGerais(self):
+        if self.df_metrica.empty:
+            return
+        
+        def definir_status_ui(porcentagem):
+            if porcentagem >= 90:
+                return "critico"
+            elif porcentagem >= 70:
+                return "atencao"
+            return "estavel"
+        
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].sort_values(by="horario")
+            ultima_linha = df_maquina.iloc[-1]
+
+            cpu_val = float(ultima_linha.cpuPorcentagem)
+            ram_val = float(ultima_linha.porcentagemRam)
+            disco_val = float(ultima_linha.porcentagemDisco)
+
+            vel_upload = float(ultima_linha.velocidadeUpload)
+            vel_download = float(ultima_linha.velocidadeDownload)
+            
+            
+            status_cpu = definir_status_ui(cpu_val)
+            status_ram = definir_status_ui(ram_val)
+            status_disco = definir_status_ui(disco_val)
+
+            #Diagnósticos escritos:
+            gatilhos_diagnostio = []
+            if disco_val >= 90: gatilhos_diagnostio.append("Disco Saturado")
+            if cpu_val >= 90: gatilhos_diagnostio.append("CPU Saturada")
+            if ram_val >= 90: gatilhos_diagnostio.append("RAM Saturada")
+
+            texto_diagnostico = " + ".join(gatilhos_diagnostio) if gatilhos_diagnostio else "Operação Normal"
+            
+        
+
         self.salvarArquivo("dashboard_geral.json")
+        
 
     def dashboardServidorEspecifico(self):
         if self.df_metrica.empty:
