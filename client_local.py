@@ -139,7 +139,7 @@ class Client:
                     "instancias": int(ultima_linha["instancias"]),
                     "percentualRam": round(ultima_linha["ram_total"], 2),
                 }
-                if int(ultima_linha["ram_total"]) > 5:
+                if int(ultima_linha["ram_total"]) > 0.5:
                     self.conteudo[mac]["processos"].append(dadoProcesso)
 
         self.salvarArquivo("dashboard_ram.json")

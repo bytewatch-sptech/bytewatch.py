@@ -99,7 +99,7 @@ class Leitura:
             agrupado[nome]["ram_total"] += round(linha["consumoRAMProcesso"], 2)
 
         dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index(drop=True)
-        dataframeProcessos = dataframeProcessos[(dataframeProcessos['cpu_total'] >= 3) | (dataframeProcessos['ram_total'] >= 3)]
+        # dataframeProcessos = dataframeProcessos[(dataframeProcessos['cpu_total'] >= 3) | (dataframeProcessos['ram_total'] >= 3)]
         dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
         return dataframeProcessos
         
