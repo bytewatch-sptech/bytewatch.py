@@ -106,8 +106,8 @@ class Client:
                 "ramTotal": ultima_linha.ramTotal,
                 "ramUsada": ultima_linha.ramUsada,
                 "kpiUso": {
-                    "percentualUsado": ultima_linha.porcentagemRam,
-                    "percentualLivre": 100 - ultima_linha.porcentagemRam
+                    "percentualUsado": round(ultima_linha.porcentagemRam),
+                    "percentualLivre": round(100 - ultima_linha.porcentagemRam)
                 },
                 "kpiPico": {
                     "picoHoje": pico_hoje,
