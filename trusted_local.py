@@ -91,6 +91,7 @@ class Leitura:
                     "cpu_total": 0, 
                     "ram_total": 0, 
                     "mac_address": linha["macAddress"], 
+                    "quantidadeProcessos": linha["quantidadeProcessos"],
                     "data": dataProcesso
                 }
 

@@ -114,6 +114,11 @@ class Client:
                     "picoOntem": pico_ontem,
                     "variacao": variacao
                 },
+                "kpiInformacao": {
+                    "macAddress": ultima_linha.macAddress,
+                    "ultimaColeta": ultima_linha.horario.strftime('%Y-%m-%d %H:%M:%S'),
+                    "capacidadeRam": round(ultima_linha.ramTotal),
+                },
                 "kpiEsgotamento": {
                     "tempoRestante": tempo_esgotamento
                 },
@@ -131,6 +136,7 @@ class Client:
                 
                 dadoProcesso = {
                     "tipoDado": "processo",
+                    "quantidadeProcessos": int(ultima_linha["quantidadeProcessos"]),
                     "pid": int(ultima_linha["pid"]),
                     "status": ultima_linha["status"],
                     "macAddress": mac,
