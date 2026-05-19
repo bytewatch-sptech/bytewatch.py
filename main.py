@@ -1,30 +1,47 @@
-# pip install -r requirements.txt
-
+import time
 from escrita import Escrita
 from leitura import Leitura
 from db import database
-import time
+
+from client import Client
 
 capturaDadosComponentes = Escrita()
 leituraDadosComponentes = Leitura()
 
 macAddress = capturaDadosComponentes.macAddress
-if (not database.macAddressExiste(macAddress)):
-    print(f"Servidor com mac address {macAddress} não está cadastrado!")
 
-else:
-    while True:
-        dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
-        arquivoMetricas = capturaDadosComponentes.arquivoMetricas
-        capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
-        capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech", "raw", arquivoMetricas)
+while True:
+    dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
+    arquivoMetricas = capturaDadosComponentes.arquivoMetricas
+    capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+    capturaDadosComponentes.salvarArquivoNoBucket(
+        arquivoMetricas, "amzn-s3-bucket-teste-projeto", "raw", arquivoMetricas
+    )
 
-        dadosProcessos = capturaDadosComponentes.capturarProcessos()
-        arquivoProcessos = capturaDadosComponentes.arquivoProcessos
-        capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
-        capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech", "raw", arquivoProcessos)
+    dadosProcessos = capturaDadosComponentes.capturarProcessos()
 
+    arquivoProcessos = getattr(
+        capturaDadosComponentes, "arquivoProcessos", "processos.json"
+    )
 
-        leituraDadosComponentes.mainLoop()
+    capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+    capturaDadosComponentes.salvarArquivoNoBucket(
+        arquivoProcessos, "amzn-s3-bucket-teste-projeto", "raw", arquivoProcessos
+    )
 
-        time.sleep(10)
+    leituraDadosComponentes.mainLoop()
+
+    try:
+        processador = Client()
+        processador.tratarMetricas()
+        processador.tratarProcessos()
+        processador.salvarArquivo()
+
+        capturaDadosComponentes.salvarArquivoNoBucket(
+            "client.json", "amzn-s3-bucket-teste-projeto", "trusted", "client.json"
+        )
+        print("client.json atualizado e enviado para o S3 com sucesso.")
+    except Exception as e:
+        print(f"Erro ao processar client.json: {e}")
+
+    time.sleep(10)

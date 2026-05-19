@@ -1,12 +1,13 @@
 import mysql.connector
 
+
 class Database:
     def __init__(self):
         self.db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="0262",
-        database="monitoramento"
+            host="localhost",
+            user="bytewatch",
+            password="bytewatch050123",
+            database="monitoramento",
         )
 
         self.conn = self.db.cursor()
@@ -21,5 +22,6 @@ class Database:
     def fechar_conexao(self):
         self.conn.close()
         self.db.close()
+
 
 database = Database()
