@@ -40,7 +40,9 @@ class Client:
 
     def dashboardServidoresGerais(self):
         self.salvarArquivo("dashboard_geral.json")
+        
 
+#aqui
     def dashboardServidorEspecifico(self):
         if self.df_metrica.empty:
             return

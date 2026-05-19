@@ -1,4 +1,4 @@
-import time, psutil, os, datetime, platform, uuid, boto3
+import time, psutil, os, datetime, platform, uuid, boto3, requests
 from cpuinfo import get_cpu_info
 from re import findall
 import pandas as pd 
@@ -8,15 +8,32 @@ class Escrita():
     arquivoMetricas = ""
     macAddress = ""
     cpu_nome = "Desconhecido"
+    latitude = 0.0
+    longitude = 0.0
+    cidade = "None"
     
     def __init__(self):
         self.macAddress = self.obterMacAddress()
         self.arquivoProcessos = f"processos_{self.macAddress}_raw.csv"
         self.arquivoMetricas = f"metricas_{self.macAddress}_raw.csv"
         self.obterDadoProcessador()
+        self.descobrirLocalizacao()
 
+    def descobrirLocalizacao(self):
+        try:
+            resposta = requests.get("http://ip-api.com/json/").json()
+            
+            self.latitude = resposta.get("lat")
+            self.longitude = resposta.get("lon")
+            self.cidade = resposta.get("city")
+            print(f"Servidor Localizado em: {self.cidade} ({self.latitude}, {self.longitude})")
+        except Exception as e:
+            print("Erro ao buscar localização")
+            self.latitude = -23.5505
+            self.longitude = -46.6333
+            self.cidade = "São Paulo TM"    
     def obterMacAddress(self):
-        mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
+        mac = '-'.join(findall('..', '%012x' % uuid.getnode()))
         print(f"MAC Address: {mac}")
         return mac
     
@@ -104,7 +121,7 @@ class Escrita():
         nome_maquina = platform.node()
         processador = self.cpu_nome
         horas = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+        
         cpuPorcentagem = psutil.cpu_percent()
         cpuNucleosFisicos = psutil.cpu_count(logical=False)
         cpuNucleosLogicos = psutil.cpu_count()
@@ -131,4 +148,4 @@ class Escrita():
 
         print(f"|    Escrita de métricas\n|    Horário: {horas}\n|    Endereço MAC: {self.macAddress}\n|    Nome da máquina: {nome_maquina}\n|\n======================================\n\n                CPU\n\nProcessador: {processador}\n\nCPU Porcentagem: {cpuPorcentagem}%\nCPU Núcleos Físicos: {cpuNucleosFisicos}\nCPU Núcleos Lógicos: {cpuNucleosLogicos}\n\nCPU Tempo Usuário: {cpuTempoUser}\nCPU Tempo Sistema: {cpuTempoSistema}\nCPU Tempo Inativo: {cpuTempoInativo}\n\n----------------------------------\n                RAM\n\nRAM Usada: {ramUsada}\nRAM Total: {ramTotal}\nRAM Livre: {ramLivre}\n\n----------------------------------\n                DISCO\n\nDisco Usado: {discoUsado}\nDisco Total: {discoTotal}\nDisco Livre: {discoLivre}\n\n----------------------------------\n                INTERNET\n\nTotal Bytes Enviados: {bytesEnviados}\nTotal Bytes Recebidos: {bytesRecebidos}\nVelocidade Download: {velocidadeDownload} B/s\nvelocidade Upload: {velocidadeUpload} B/s\n\n======================================")
 
-        return {"horario": [horas], "macAddress": self.macAddress, "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "ramLivre": [ramLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "discoLivre": [discoLivre], "velocidadeEscrita": [velocidade_escrita], "velocidadeLeitura": [velocidade_leitura], "bytesEnviados": [bytesEnviados], "bytesRecebidos": [bytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoes_ativas]}
+        return {"horario": [horas], "macAddress": self.macAddress, "nome_maquina": [nome_maquina], "latitude": [self.latitude], "longitude": [self.longitude], "cidade": [self.cidade], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "ramLivre": [ramLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "discoLivre": [discoLivre], "velocidadeEscrita": [velocidade_escrita], "velocidadeLeitura": [velocidade_leitura], "bytesEnviados": [bytesEnviados], "bytesRecebidos": [bytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoes_ativas]}

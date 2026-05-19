@@ -120,7 +120,130 @@ class Client:
 
 
     def dashboardServidoresGerais(self):
+        if self.df_metrica.empty:
+            return
+        
+        def definir_status_ui(porcentagem):
+            if porcentagem >= 90:
+                return "critico"
+            elif porcentagem >= 70:
+                return "risco"
+            return "estavel"
+        
+        lista_servidores_json = []
+        total_criticos = 0
+    
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].sort_values(by="horario")
+            ultima_linha = df_maquina.iloc[-1]
+
+            cpu_val = float(ultima_linha.cpuPorcentagem)
+            ram_val = float(ultima_linha.porcentagemRam)
+            disco_val = float(ultima_linha.porcentagemDisco)
+
+            vel_upload = float(ultima_linha.velocidadeUpload)
+            vel_download = float(ultima_linha.velocidadeDownload)
+            dropped = int(ultima_linha.droppedPackets)
+
+            lat_real = float(ultima_linha.get("latitude", -23.5505))
+            lon_real = float(ultima_linha.get("longitude", -46.6333))
+            cidade_real = str(ultima_linha.get("cidade", "São Paulo"))
+            capacidade_nominal_MB = 125.0
+
+            saturacao_rede = ((vel_upload + vel_download)/ capacidade_nominal_MB) * 100
+            p_saturacao = (saturacao_rede - 70) * 1.5 if saturacao_rede > 70 else 0.0
+            p_erro = dropped * 2.0
+            rede_eficiencia = max(0.0, min(100.0, 100.0 - p_saturacao - p_erro))
+
+            rede_eficiencia_invertida = 100.0 - rede_eficiencia
+            status_rede = "critico" if rede_eficiencia < 70 else ("atencao" if rede_eficiencia < 85 else "estavel")
+            
+            status_cpu = definir_status_ui(cpu_val)
+            status_ram = definir_status_ui(ram_val)
+            status_disco = definir_status_ui(disco_val)
+
+            #Status do servidor
+            status_componentes = [status_cpu, status_ram, status_disco]
+            if "critico" in status_componentes or status_componentes.count("risco") >= 2:
+                status_servidor = "critico"
+                total_criticos += 1
+            elif status_componentes.count("risco") == 1:
+                status_servidor = "risco"
+            else:
+                status_servidor = "estavel"
+
+            #Diagnósticos escritos:
+            gatilhos_diagnostio = []
+            if disco_val >= 90: gatilhos_diagnostio.append("Disco Saturado")
+            if cpu_val >= 90: gatilhos_diagnostio.append("CPU Saturada")
+            if ram_val >= 90: gatilhos_diagnostio.append("RAM Saturada")
+            if saturacao_rede >= 75: gatilhos_diagnostio.append("Rede Lenta")
+
+            texto_diagnostico = " + ".join(gatilhos_diagnostio) if gatilhos_diagnostio else "Operação Normal"
+
+            nome_maquina = str(ultima_linha.nome_maquina)
+
+            eixo_x = (cpu_val * 0.50) + (ram_val * 0.30) + (disco_val * 0.10) + (rede_eficiencia_invertida * 0.10)
+            eixo_y = min(100.0, float(dropped) * 1.0)
+
+            tamanho_bolha = max(eixo_x, eixo_y)
+
+
+            servidor_objeto = {
+                "macAddress": mac,
+                "nome": nome_maquina,
+                "regiao": cidade_real,
+                "ultimaColeta": str(ultima_linha.horario),
+                "status_servidor": status_servidor,
+                "diagnostico_etl": texto_diagnostico,
+                "geolocalizacao": {
+                    "coords": [lon_real, lat_real],
+                    "saturacao_trafego": round(saturacao_rede, 1)
+                },
+                "matriz_priorizacao":{
+                    "x": round(eixo_x, 1),
+                    "y": round(eixo_y, 1),
+                    "tamanho_bolha": round(tamanho_bolha, 1)
+                },
+                "componentes": {
+                    "cpu": {
+                        "valor": round(cpu_val, 1),
+                        "status_ui": status_cpu,
+                        "acao_permitida": "abrir"
+                    },
+                    "ram": {
+                        "valor": round(ram_val, 1),
+                        "status_ui": status_ram,
+                        "acao_permitida": "abrir"
+                    },
+                    "disco": {
+                        "valor": round(disco_val, 1),
+                        "status_ui": status_disco,
+                        "acao_permitida": "informativo"
+                    },
+                    "rede": {
+                        "valor": round(rede_eficiencia, 1),
+                        "status_ui": status_rede,
+                        "acao_permitida": "informativo"
+                    }
+                }
+            }
+            lista_servidores_json.append(servidor_objeto)
+        
+        #Ordenação pra mostrar os criticos primeiros
+        ordem_status = {"critico": 0, "risco": 1, "estavel": 2}
+        lista_servidores_json.sort(key=lambda s: ordem_status[s["status_servidor"]])
+
+        self.conteudo = {
+            "resumo_global":{
+                "servidores_criticos": total_criticos,
+                "total_servidores": len(lista_servidores_json)
+            },
+            "frota_servidores": lista_servidores_json
+        }
+
         self.salvarArquivo("dashboard_geral.json")
+        self.conteudo = {}
 
     def calcular_previsao_esgotamento(self, df_maquina):
         data_ultima_captura = df_maquina['horario'].max().normalize()

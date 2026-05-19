@@ -67,7 +67,7 @@ class Leitura:
             df_trusted.to_csv(arquivo_final, index=False, encoding='utf-8')
 
     def obterMacAddress(self):
-        mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
+        mac = '-'.join(findall('..', '%012x' % uuid.getnode()))
         print(f"MAC Address: {mac}")
         return mac
 

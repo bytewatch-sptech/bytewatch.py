@@ -145,6 +145,10 @@ class Leitura:
         velocidadeEscrita = round(self.ultimo_dado["velocidadeEscrita"] / 1024**2, 2)
         velocidadeLeitura = round(self.ultimo_dado["velocidadeLeitura"] / 1024**2, 2)
 
+        latitude = self.ultimo_dado.get("latitude", -23.5505)
+        longitude = self.ultimo_dado.get("longitude", -46.6333)
+        cidade = self.ultimo_dado.get("cidade", "São Paulo")
+
         dados_resultados = {
             "horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], 
             "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], 
@@ -155,7 +159,8 @@ class Leitura:
             "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], 
             "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], 
             "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], 
-            "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]
+            "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas],
+            "latitude": [latitude], "longitude": [longitude], "cidade": [cidade],
         }
 
         return dados_resultados
