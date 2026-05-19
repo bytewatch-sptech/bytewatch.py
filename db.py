@@ -5,7 +5,7 @@ class Database:
         self.config = {
             "host": "localhost",
             "user": "root",
-            "password": "@Jax10", 
+            "password": "0262", 
             "database": "monitoramento"
         }
 
