@@ -5,7 +5,7 @@ class Database:
         self.db = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="",
+        password="_9Pilares",
         database="monitoramento"
         )
 

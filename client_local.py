@@ -19,6 +19,14 @@ class Client:
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
             ultima_captura = df_maquina.iloc[-1]
 
+            idx_ram = df_maquina["porcentagemRam"].idxmax()
+            pico_ram = df_maquina.loc[idx_ram, "porcentagemRam"]
+            momento_pico_ram = df_maquina.loc[idx_ram, "horario"]
+
+            idx_cpu = df_maquina["cpuPorcentagem"].idxmax()
+            pico_cpu = df_maquina.loc[idx_cpu, "cpuPorcentagem"]
+            momento_pico_cpu = df_maquina.loc[idx_cpu, "horario"]
+
             if mac not in self.conteudo:
                 self.conteudo[mac] = {
                     "metricas": [],
@@ -37,8 +45,10 @@ class Client:
                     "percentualLivre": 100 - ultima_captura.porcentagemRam
                 },
                 "grafico": {
-                    "percentualUsado": df_maquina["porcentagemRam"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
+                    "percentualUsado": ultima_captura.porcentagemRam,
+                    "percentualLivre": 100 - ultima_captura.porcentagemRam,
+                    "pico": pico_ram,
+                    "momentoPico": momento_pico_ram
                 }
             })
 
@@ -54,10 +64,14 @@ class Client:
                     "percentualLivre": 100 - ultima_captura.cpuPorcentagem
                 },
                 "grafico": {
-                    "percentualUsado": df_maquina["cpuPorcentagem"].tolist(),
-                    "momento": df_maquina["horario"].tolist(),
+                    "percentualUsado": ultima_captura.cpuPorcentagem,
+                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem,
+                    "pico": pico_cpu,
+                    "momentoPico": momento_pico_cpu
                 }
             })
+
+            
 
         self.salvarArquivo("dashboard_gestor.json")
         self.conteudo = {}
