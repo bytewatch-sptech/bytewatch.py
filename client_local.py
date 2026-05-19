@@ -21,7 +21,7 @@ class Client:
         nivel = self.classificar_alerta(valor)
 
         if nivel:
-            self.conteudo[mac]["alertas"].append(
+            self.conteudo["alertas"].append(
                 {
                     "mac": mac,
                     "componente": componente.upper(),
@@ -42,9 +42,10 @@ class Client:
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
             ultima_linha = df_maquina
+            # ultima_linha = df_maquina.iloc[-1]
 
             if mac not in self.conteudo:
-                self.conteudo[mac] = {"alertas": []}
+                self.conteudo = {"alertas": []}
 
                 print((ultima_linha.porcentagemRam))
 
@@ -72,8 +73,8 @@ class Client:
                         mac, "cpu", ultima_linha.cpuPorcentagem[i], ultima_linha.horario[i]
                     )
 
-                self.conteudo[mac]["alertas"] = sorted(
-                    self.conteudo[mac]["alertas"], key=self.prioridade_alerta
+                self.conteudo["alertas"] = sorted(
+                    self.conteudo["alertas"], key=self.prioridade_alerta
                 )
 
         self.salvarArquivo("dashboard_alertas.json")
