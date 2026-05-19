@@ -11,7 +11,7 @@ leituraDadosComponentes = Leitura()
 
 
 macAddress = capturaDadosComponentes.macAddress
-if (database.macAddressExiste(macAddress)):
+if (not database.macAddressExiste(macAddress)):
     print(f"Servidor com mac address {macAddress} não está cadastrado!")
 
 else:
