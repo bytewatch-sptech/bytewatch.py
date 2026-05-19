@@ -27,7 +27,7 @@ class Client:
                     "componente": componente.upper(),
                     "nivel": nivel,
                     "valor": float(valor),
-                    "horario": horario,
+                    "horario": horario.strftime('%Y-%m-%d %H:%M:%S'),
                     "mensagem": f"Uso de {componente.upper()} em {valor}%",
                 }
             )
@@ -41,37 +41,40 @@ class Client:
     def dashboardAlertasGestor(self):
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
+        
+            df_maquina = df_maquina.sort_values(by='horario')
             ultima_linha = df_maquina
-            # ultima_linha = df_maquina.iloc[-1]
+            ultima_linha = df_maquina.iloc[-1]
 
             if mac not in self.conteudo:
                 self.conteudo = {"alertas": []}
 
                 print((ultima_linha.porcentagemRam))
 
-                ultima_linha.porcentagemRam = list(ultima_linha.porcentagemRam)
-                ultima_linha.horario = list(ultima_linha.horario)
+                # ultima_linha.porcentagemRam = list(ultima_linha.porcentagemRam)
+                # ultima_linha.horario = list(ultima_linha.horario)
 
-                for i in range(len(ultima_linha.porcentagemRam)): 
-                    self.adicionar_alerta(
-                        mac, "ram", ultima_linha.porcentagemRam[i], ultima_linha.horario[i]
-                    )
+                # for i in range(len(ultima_linha.porcentagemRam)): 
+                self.adicionar_alerta(
+                    mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario
+                )
                     
 
 
-                ultima_linha.porcentagemDisco = list(ultima_linha.porcentagemDisco)
+                # ultima_linha.porcentagemDisco = list(ultima_linha.porcentagemDisco)
 
-                for i in range(len(ultima_linha.porcentagemDisco)): 
-                    self.adicionar_alerta(
-                        mac, "disco", ultima_linha.porcentagemDisco[i], ultima_linha.horario[i]
-                    )
+                # for i in range(len(ultima_linha.porcentagemDisco)): 
+                self.adicionar_alerta(
+                    mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario
+                )
 
-                ultima_linha.cpuPorcentagem = list(ultima_linha.cpuPorcentagem)
+                # ultima_linha.cpuPorcentagem = list(ultima_linha.cpuPorcentagem)
 
-                for i in range(len(ultima_linha.cpuPorcentagem)): 
-                    self.adicionar_alerta(
-                        mac, "cpu", ultima_linha.cpuPorcentagem[i], ultima_linha.horario[i]
-                    )
+                # for i in range(len(ultima_linha.cpuPorcentagem)): 
+                self.adicionar_alerta(
+                    mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario
+                )
 
                 self.conteudo["alertas"] = sorted(
                     self.conteudo["alertas"], key=self.prioridade_alerta
