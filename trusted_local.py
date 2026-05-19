@@ -74,22 +74,35 @@ class Leitura:
     def agrupar_processos_por_nome(self):
         agrupado = {}
 
-        for i, linha in self.dataframe.iterrows():
+        self.dataframe['Data'] = pd.to_datetime(self.dataframe['Data'])
+        ultima_data = self.dataframe['Data'].max()
+        df_ultima_captura = self.dataframe[self.dataframe['Data'] == ultima_data]
+
+        for i, linha in df_ultima_captura.iterrows():
             nome = linha["nomeProcesso"]
             dataProcesso = linha["Data"]
-            chave = (nome, dataProcesso)
 
-            if chave not in agrupado:
-                agrupado[chave] = {"nome_processo": linha["nomeProcesso"], "instancias": 0, "cpu_total": 0, "ram_total": 0, "mac_address": linha["macAddress"], "data": dataProcesso}
+            if nome not in agrupado:
+                agrupado[nome] = {
+                    "pid": linha["idProcessos"], 
+                    "status": linha["status"], 
+                    "nome_processo": linha["nomeProcesso"], 
+                    "instancias": 0, 
+                    "cpu_total": 0, 
+                    "ram_total": 0, 
+                    "mac_address": linha["macAddress"], 
+                    "quantidadeProcessos": linha["quantidadeProcessos"],
+                    "data": dataProcesso
+                }
 
-            agrupado[chave]["instancias"] += 1
-            agrupado[chave]["cpu_total"] += linha["consumoCPUProcesso"]
-            agrupado[chave]["ram_total"] += linha["consumoRAMProcesso"]
+            agrupado[nome]["instancias"] += 1
+            agrupado[nome]["cpu_total"] += round(linha["consumoCPUProcesso"], 2)
+            agrupado[nome]["ram_total"] += round(linha["consumoRAMProcesso"], 2)
 
-        dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index()
-        dataframeProcessos = dataframeProcessos.drop(['level_0', 'level_1'], axis=1)
-        # dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
-        return dataframeProcessos.round(2)
+        dataframeProcessos = pd.DataFrame.from_dict(agrupado, orient="index").reset_index(drop=True)
+        # dataframeProcessos = dataframeProcessos[(dataframeProcessos['cpu_total'] >= 3) | (dataframeProcessos['ram_total'] >= 3)]
+        dataframeProcessos = dataframeProcessos.sort_values(by="ram_total", ascending=False)
+        return dataframeProcessos
         
     def formatarDadosComponentes(self):
         horas = self.ultimo_dado["horario"]
