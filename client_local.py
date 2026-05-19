@@ -14,6 +14,14 @@ class Client:
     def dashboardGestor(self):
         if self.df_metrica.empty:
             return
+        
+        ranking_ram = []
+        
+        maior_pico_ram_global = 0
+        mac_pico_ram = None
+
+        maior_pico_cpu_global = 0
+        mac_pico_cpu = None
 
         df_maquina = self.df_metrica.copy()
         df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
@@ -62,6 +70,27 @@ class Client:
             pico_cpu = df_maquina.loc[idx_cpu, "cpuPorcentagem"]
             momento_pico_cpu = df_maquina.loc[idx_cpu, "horario"]
 
+            if pico_ram > maior_pico_ram_global:
+                maior_pico_ram_global = pico_ram
+                mac_pico_ram = mac
+
+            if pico_cpu > maior_pico_cpu_global:
+                maior_pico_cpu_global = pico_cpu
+                mac_pico_cpu = mac
+
+            self.conteudo["ServidorEmPico"] = {
+                "servidorPicoRAM": {
+                    "macAddress": mac_pico_ram,
+                    "valor": maior_pico_ram_global,
+                    "ultimaColeta": ultima_captura.horario
+                },
+                "servidorPicoCPU": {
+                    "macAddress": mac_pico_cpu,
+                    "valor": maior_pico_cpu_global,
+                    "ultimaColeta": ultima_captura.horario
+                }
+            }
+
             if mac not in self.conteudo:
                 self.conteudo[mac] = {
                     "metricas": [],
@@ -107,12 +136,8 @@ class Client:
             })
 
             
+            ranking_ram.append((mac, pico_ram))
 
-        self.salvarArquivo("dashboard_gestor.json")
-        self.conteudo = {}
-
-        
-           
         self.salvarArquivo("dashboard_gestor.json")
         self.conteudo = {}
 
