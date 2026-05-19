@@ -12,7 +12,56 @@ class Client:
         self.salvarArquivo("dashboard_alertas.json")
 
     def dashboardGestor(self):
+        if self.df_metrica.empty:
+            return
+        
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            ultima_captura = df_maquina.iloc[-1]
+
+            if mac not in self.conteudo:
+                self.conteudo[mac] = {
+                    "metricas": [],
+                    "processos": []
+                }
+
+            self.conteudo[mac]["metricas"].append({
+                "tipoDado": "ram",
+                "macAddress": mac,
+                "ultimaColeta": ultima_captura.horario,
+                "porcentagemRam": ultima_captura.porcentagemRam,
+                "ramTotal": ultima_captura.ramTotal,
+                "ramUsada": ultima_captura.ramUsada,
+                "kpi": {
+                    "percentualUsado": ultima_captura.porcentagemRam,
+                    "percentualLivre": 100 - ultima_captura.porcentagemRam
+                },
+                "grafico": {
+                    "percentualUsado": df_maquina["porcentagemRam"].tolist(),
+                    "momento": df_maquina["horario"].tolist(),
+                }
+            })
+
+            self.conteudo[mac]["metricas"].append({
+                "tipoDado": "cpu",
+                "macAddress": mac,
+                "ultimaColeta": ultima_captura.horario,
+                "processador": ultima_captura.processador,
+                "porcentagemCpu": ultima_captura.cpuPorcentagem,
+                "coresLogicos": int(ultima_captura.cpuNucleosLogicos),
+                "kpi": {
+                    "percentualUsado": ultima_captura.cpuPorcentagem,
+                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem
+                },
+                "grafico": {
+                    "percentualUsado": df_maquina["cpuPorcentagem"].tolist(),
+                    "momento": df_maquina["horario"].tolist(),
+                }
+            })
+
         self.salvarArquivo("dashboard_gestor.json")
+        self.conteudo = {}
+
 
 
     def dashboardServidoresGerais(self):

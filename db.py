@@ -5,7 +5,7 @@ class Database:
         self.db = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="0262",
+        password="",
         database="monitoramento"
         )
 
@@ -15,6 +15,7 @@ class Database:
         self.conn.execute(f"SELECT * FROM servidor WHERE mac_address = '{macAddress}'")
         resultado = self.conn.fetchall()
         servidorExiste = len(resultado) > 0
+        print(resultado)
         self.fechar_conexao()
         return servidorExiste
 
