@@ -8,8 +8,76 @@ class Client:
         self.df_metrica = pd.read_csv("metricas_trusted.csv", on_bad_lines='skip')
         self.df_processos = pd.read_csv("processos_trusted.csv", on_bad_lines='skip')
 
-    def dashboardAlertas(self):
+    def classificar_alerta(self, valor):
+        if valor >= 90:
+            print("critico")
+            return "CRÍTICO"
+        elif valor >= 70:
+            print("alerta")
+            return "ALERTA"
+        return None
+
+    def adicionar_alerta(self, mac, componente, valor, horario):
+        nivel = self.classificar_alerta(valor)
+
+        if nivel:
+            self.conteudo[mac]["alertas"].append(
+                {
+                    "mac": mac,
+                    "componente": componente.upper(),
+                    "nivel": nivel,
+                    "valor": float(valor),
+                    "horario": horario,
+                    "mensagem": f"Uso de {componente.upper()} em {valor}%",
+                }
+            )
+
+    def prioridade_alerta(self, alerta):
+        if alerta["nivel"] == "CRÍTICO":
+            return 0
+        else:
+            return 1
+
+    def dashboardAlertasGestor(self):
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            ultima_linha = df_maquina
+
+            if mac not in self.conteudo:
+                self.conteudo[mac] = {"alertas": []}
+
+                print((ultima_linha.porcentagemRam))
+
+                ultima_linha.porcentagemRam = list(ultima_linha.porcentagemRam)
+                ultima_linha.horario = list(ultima_linha.horario)
+
+                for i in range(len(ultima_linha.porcentagemRam)): 
+                    self.adicionar_alerta(
+                        mac, "ram", ultima_linha.porcentagemRam[i], ultima_linha.horario[i]
+                    )
+                    
+
+
+                ultima_linha.porcentagemDisco = list(ultima_linha.porcentagemDisco)
+
+                for i in range(len(ultima_linha.porcentagemDisco)): 
+                    self.adicionar_alerta(
+                        mac, "disco", ultima_linha.porcentagemDisco[i], ultima_linha.horario[i]
+                    )
+
+                ultima_linha.cpuPorcentagem = list(ultima_linha.cpuPorcentagem)
+
+                for i in range(len(ultima_linha.cpuPorcentagem)): 
+                    self.adicionar_alerta(
+                        mac, "cpu", ultima_linha.cpuPorcentagem[i], ultima_linha.horario[i]
+                    )
+
+                self.conteudo[mac]["alertas"] = sorted(
+                    self.conteudo[mac]["alertas"], key=self.prioridade_alerta
+                )
+
         self.salvarArquivo("dashboard_alertas.json")
+        self.conteudo = {}
 
     def dashboardGestor(self):
         df_maquina = self.df_metrica.copy()
@@ -191,7 +259,7 @@ class Client:
             json.dump(self.conteudo, f, indent=4, ensure_ascii=False)
 
     def mainLoop(self):
-        self.dashboardAlertas()
+        self.dashboardAlertasGestor()
         self.dashboardGestor()
         self.dashboardServidoresGerais()
         self.dashboardRam()
