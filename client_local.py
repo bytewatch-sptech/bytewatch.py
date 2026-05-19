@@ -40,7 +40,10 @@ class Client:
             vel_upload = float(ultima_linha.velocidadeUpload)
             vel_download = float(ultima_linha.velocidadeDownload)
             dropped = int(ultima_linha.droppedPackets)
-            
+
+            lat_real = float(ultima_linha.get("latitude", -23.5505))
+            lon_real = float(ultima_linha.get("longitude", -46.6333))
+            cidade_real = str(ultima_linha.get("cidade", "São Paulo"))
             capacidade_nominal_MB = 125.0
 
             saturacao_rede = ((vel_upload + vel_download)/ capacidade_nominal_MB) * 100
@@ -85,12 +88,12 @@ class Client:
             servidor_objeto = {
                 "macAddress": mac,
                 "nome": nome_maquina,
-                "regiao": "Teste Local Daora",
+                "regiao": cidade_real,
                 "ultimaColeta": str(ultima_linha.horario),
                 "status_servidor": status_servidor,
                 "diagnostico_etl": texto_diagnostico,
                 "geolocalizacao": {
-                    "coords": [-23.5505, -46.6333],
+                    "coords": [lon_real, lat_real],
                     "saturacao_trafego": round(saturacao_rede, 1)
                 },
                 "matriz_priorizacao":{
