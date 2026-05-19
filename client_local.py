@@ -48,6 +48,7 @@ class Client:
             p_erro = dropped * 2.0
             rede_eficiencia = max(0.0, min(100.0, 100.0 - p_saturacao - p_erro))
 
+            rede_eficiencia_invertida = 100.0 - rede_eficiencia
             status_rede = "critico" if rede_eficiencia < 70 else ("atencao" if rede_eficiencia < 85 else "estavel")
             
             status_cpu = definir_status_ui(cpu_val)
@@ -75,6 +76,12 @@ class Client:
 
             nome_maquina = str(ultima_linha.nome_maquina)
 
+            eixo_x = (cpu_val * 0.50) + (ram_val * 0.30) + (disco_val * 0.10) + (rede_eficiencia_invertida * 0.10)
+            eixo_y = min(100.0, float(dropped) * 1.0)
+
+            tamanho_bolha = max(eixo_x, eixo_y)
+
+
             servidor_objeto = {
                 "macAddress": mac,
                 "nome": nome_maquina,
@@ -85,6 +92,11 @@ class Client:
                 "geolocalizacao": {
                     "coords": [-23.5505, -46.6333],
                     "saturacao_trafego": round(saturacao_rede, 1)
+                },
+                "matriz_priorizacao":{
+                    "x": round(eixo_x, 1),
+                    "y": round(eixo_y, 1),
+                    "tamanho_bolha": round(tamanho_bolha, 1)
                 },
                 "componentes": {
                     "cpu": {
@@ -124,6 +136,7 @@ class Client:
         }
 
         self.salvarArquivo("dashboard_geral.json")
+        self.conteudo = {}
         
     def dashboardServidorEspecifico(self):
         for mac in self.df_metrica["macAddress"].unique():
