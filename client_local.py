@@ -79,7 +79,19 @@ class Client:
         self.salvarArquivo("dashboard_alertas.json")
         self.conteudo = {}
 
+
     def dashboardGestor(self):
+        if self.df_metrica.empty:
+            return
+        
+        ranking_ram = []
+        
+        maior_pico_ram_global = 0
+        mac_pico_ram = None
+
+        maior_pico_cpu_global = 0
+        mac_pico_cpu = None
+
         df_maquina = self.df_metrica.copy()
         df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
         
@@ -114,9 +126,90 @@ class Client:
             "custoTotalAteAgora": round(custoTotalAteAgora, 2),
             "custoTotalNoMes": round(custoTotalMensal, 2)
         }
-           
+        
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            ultima_captura = df_maquina.iloc[-1]
+
+            idx_ram = df_maquina["porcentagemRam"].idxmax()
+            pico_ram = df_maquina.loc[idx_ram, "porcentagemRam"]
+            momento_pico_ram = df_maquina.loc[idx_ram, "horario"]
+
+            idx_cpu = df_maquina["cpuPorcentagem"].idxmax()
+            pico_cpu = df_maquina.loc[idx_cpu, "cpuPorcentagem"]
+            momento_pico_cpu = df_maquina.loc[idx_cpu, "horario"]
+
+            if pico_ram > maior_pico_ram_global:
+                maior_pico_ram_global = pico_ram
+                mac_pico_ram = mac
+
+            if pico_cpu > maior_pico_cpu_global:
+                maior_pico_cpu_global = pico_cpu
+                mac_pico_cpu = mac
+
+            self.conteudo["ServidorEmPico"] = {
+                "servidorPicoRAM": {
+                    "macAddress": mac_pico_ram,
+                    "valor": maior_pico_ram_global,
+                    "ultimaColeta": ultima_captura.horario
+                },
+                "servidorPicoCPU": {
+                    "macAddress": mac_pico_cpu,
+                    "valor": maior_pico_cpu_global,
+                    "ultimaColeta": ultima_captura.horario
+                }
+            }
+
+            if mac not in self.conteudo:
+                self.conteudo[mac] = {
+                    "metricas": [],
+                    "processos": []
+                }
+
+            self.conteudo[mac]["metricas"].append({
+                "tipoDado": "ram",
+                "macAddress": mac,
+                "ultimaColeta": ultima_captura.horario,
+                "porcentagemRam": ultima_captura.porcentagemRam,
+                "ramTotal": ultima_captura.ramTotal,
+                "ramUsada": ultima_captura.ramUsada,
+                "kpi": {
+                    "percentualUsado": ultima_captura.porcentagemRam,
+                    "percentualLivre": 100 - ultima_captura.porcentagemRam
+                },
+                "grafico": {
+                    "percentualUsado": ultima_captura.porcentagemRam,
+                    "percentualLivre": 100 - ultima_captura.porcentagemRam,
+                    "pico": pico_ram,
+                    "momentoPico": momento_pico_ram
+                }
+            })
+
+            self.conteudo[mac]["metricas"].append({
+                "tipoDado": "cpu",
+                "macAddress": mac,
+                "ultimaColeta": ultima_captura.horario,
+                "processador": ultima_captura.processador,
+                "porcentagemCpu": ultima_captura.cpuPorcentagem,
+                "coresLogicos": int(ultima_captura.cpuNucleosLogicos),
+                "kpi": {
+                    "percentualUsado": ultima_captura.cpuPorcentagem,
+                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem
+                },
+                "grafico": {
+                    "percentualUsado": ultima_captura.cpuPorcentagem,
+                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem,
+                    "pico": pico_cpu,
+                    "momentoPico": momento_pico_cpu
+                }
+            })
+
+            
+            ranking_ram.append((mac, pico_ram))
+
         self.salvarArquivo("dashboard_gestor.json")
         self.conteudo = {}
+
 
 
     def dashboardServidoresGerais(self):
