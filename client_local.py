@@ -234,7 +234,6 @@ class Client:
         self.conteudo = {}
 
 
-
     def dashboardServidoresGerais(self):
         if self.df_metrica.empty:
             return
