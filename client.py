@@ -46,8 +46,11 @@ class Client:
             if porcentagem >= 90:
                 return "critico"
             elif porcentagem >= 70:
-                return "atencao"
+                return "risco"
             return "estavel"
+        
+            lista_servidores_json = []
+            total_criticos = 0
         
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].sort_values(by="horario")
@@ -59,11 +62,30 @@ class Client:
 
             vel_upload = float(ultima_linha.velocidadeUpload)
             vel_download = float(ultima_linha.velocidadeDownload)
+            dropped = int(ultima_linha.droppedPackets)
             
+            capacidade_nominal_MB = 125.0
+
+            saturacao_rede = ((vel_upload + vel_download)/ capacidade_nominal_MB) * 100
+            p_saturacao = (saturacao_rede - 70) * 1.5 if saturacao_rede > 70 else 0.0
+            p_erro = dropped * 2.0
+            rede_eficiencia = max(0.0, min(100.0, 100.0 - p_saturacao - p_erro))
+
+            status_rede = "critico" if rede_eficiencia < 70 else ("atencao" if rede_eficiencia < 85 else "estavel")
             
             status_cpu = definir_status_ui(cpu_val)
             status_ram = definir_status_ui(ram_val)
             status_disco = definir_status_ui(disco_val)
+
+            #Status do servidor
+            status_componentes = [status_cpu, status_ram, status_disco]
+            if "critico" in status_componentes or status_componentes.count("risco") >= 2:
+                status_servidor = "critico"
+                total_criticos += 1
+            elif status_componentes.count("risco") == 1:
+                status_servidor = "risco"
+            else:
+                status_servidor = "estavel"
 
             #Diagnósticos escritos:
             gatilhos_diagnostio = []
@@ -72,7 +94,7 @@ class Client:
             if ram_val >= 90: gatilhos_diagnostio.append("RAM Saturada")
 
             texto_diagnostico = " + ".join(gatilhos_diagnostio) if gatilhos_diagnostio else "Operação Normal"
-            
+
         
 
         self.salvarArquivo("dashboard_geral.json")
