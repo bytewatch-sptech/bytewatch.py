@@ -12,7 +12,43 @@ class Client:
         self.salvarArquivo("dashboard_alertas.json")
 
     def dashboardGestor(self):
+        df_maquina = self.df_metrica.copy()
+        df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
+        
+        df_maquina = df_maquina.sort_values(by='horario')
+        df_ultimas_coletas = df_maquina.groupby('macAddress').last().reset_index()
+
+        data_minima = df_maquina['horario'].min()
+        data_maxima = df_maquina['horario'].max()
+        dias_passados = (data_maxima - data_minima).days
+
+        total_ram = df_ultimas_coletas['ramTotal'].sum()
+        total_disco = df_ultimas_coletas['discoTotal'].sum()
+
+        custoDiarioRam = (total_ram * 2.50) / 2
+        custoDiarioDisco = (total_disco * 0.0133) / 1
+
+        custoMensalRam = custoDiarioRam * 30
+        custoMensalDisco = custoDiarioDisco * 30
+        custoTotalMensal = custoMensalRam + custoMensalDisco
+
+        custoAteAgoraDisco = custoDiarioDisco * dias_passados
+        custoAteAgoraRam = custoDiarioRam * dias_passados
+        custoTotalAteAgora = custoAteAgoraDisco + custoAteAgoraRam
+
+        
+        self.conteudo = {
+            "primeiraColeta": data_minima.strftime('%Y-%m-%d %H:%M:%S'),
+            "ultimaColeta": data_maxima.strftime('%Y-%m-%d %H:%M:%S'),
+            "diasDecorridos": int(dias_passados),
+            "ramTotal": float(total_ram),
+            "discoTotal": float(total_disco), 
+            "custoTotalAteAgora": round(custoTotalAteAgora, 2),
+            "custoTotalNoMes": round(custoTotalMensal, 2)
+        }
+           
         self.salvarArquivo("dashboard_gestor.json")
+        self.conteudo = {}
 
 
     def dashboardServidoresGerais(self):
