@@ -67,7 +67,7 @@ class Leitura:
             df_trusted.to_csv(arquivo_final, index=False, encoding='utf-8')
 
     def obterMacAddress(self):
-        mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
+        mac = '-'.join(findall('..', '%012x' % uuid.getnode()))
         print(f"MAC Address: {mac}")
         return mac
 
@@ -76,7 +76,12 @@ class Leitura:
 
         self.dataframe['Data'] = pd.to_datetime(self.dataframe['Data'])
         ultima_data = self.dataframe['Data'].max()
-        df_ultima_captura = self.dataframe[self.dataframe['Data'] == ultima_data]
+        df_ultima_captura = self.dataframe[
+            self.dataframe['Data'] == ultima_data
+        ]
+
+        if df_ultima_captura.empty:
+            return pd.DataFrame()
 
         for i, linha in df_ultima_captura.iterrows():
             nome = linha["nomeProcesso"]
@@ -108,6 +113,8 @@ class Leitura:
         horas = self.ultimo_dado["horario"]
         nome_maquina = self.ultimo_dado["nome_maquina"]
         processador = self.ultimo_dado["processador"]
+        temperatura = self.ultimo_dado["temperatura"]
+        filaProcessos = self.ultimo_dado["filaProcessos"]
 
         droppedPackets = self.ultimo_dado["droppedPackets"]
         conexoesAtivas = self.ultimo_dado["conexoesAtivas"]
@@ -118,9 +125,13 @@ class Leitura:
         cpuNucleosFisicos = self.ultimo_dado["cpuNucleosFisicos"]
         cpuNucleosLogicos = self.ultimo_dado["cpuNucleosLogicos"]
 
-        cpuTempoUser = round(self.ultimo_dado["cpuTempoUser"] / 60)
-        cpuTempoSistema = round(self.ultimo_dado["cpuTempoSistema"] / 60)
-        cpuTempoInativo = round(self.ultimo_dado["cpuTempoInativo"] / 60)
+        cpuFrequencia = round(self.ultimo_dado["cpuFrequencia"] / 1000, 2)
+        cpuFrequenciaMin = round(self.ultimo_dado["cpuFrequenciaMin"] / 1000, 2)
+        cpuFrequenciaMax = round(self.ultimo_dado["cpuFrequenciaMax"] / 1000, 2)
+
+        cpuTempoUser = round(self.ultimo_dado["cpuTempoUser"] / 60, 2)
+        cpuTempoSistema = round(self.ultimo_dado["cpuTempoSistema"] / 60, 2)
+        cpuTempoInativo = round(self.ultimo_dado["cpuTempoInativo"] / 60, 2)
 
         ramLivre  = round(self.ultimo_dado["ramLivre"]  / 1024**3, 2)
         ramUsada  = round(self.ultimo_dado["ramUsada"]  / 1024**3, 2)
@@ -143,7 +154,7 @@ class Leitura:
         velocidadeEscrita = round(self.ultimo_dado["velocidadeEscrita"] / 1024**2, 2)
         velocidadeLeitura = round(self.ultimo_dado["velocidadeLeitura"] / 1024**2, 2)
 
-        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
+        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "temperatura": [temperatura], "filaProcessos": [filaProcessos], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuFrequencia": [cpuFrequencia], "cpuFrequenciaMin": [cpuFrequenciaMin], "cpuFrequenciaMax": [cpuFrequenciaMax], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
 
         return dados_resultados
     

@@ -4,9 +4,28 @@ import json
 class Client:
     def __init__(self):
         self.conteudo = {}
-        
-        self.df_metrica = pd.read_csv("metricas_trusted.csv", on_bad_lines='skip')
-        self.df_processos = pd.read_csv("processos_trusted.csv", on_bad_lines='skip')
+
+        self.df_metrica = pd.DataFrame()
+        self.df_processos = pd.DataFrame()
+
+
+    def carregarArquivos(self):
+        try:
+            self.df_metrica = pd.read_csv(
+                "metricas_trusted.csv",
+                on_bad_lines='skip'
+            )
+
+            self.df_processos = pd.read_csv(
+                "processos_trusted.csv",
+                on_bad_lines='skip'
+            )
+
+            return True
+
+        except FileNotFoundError:
+            print("Arquivos trusted ainda não existem")
+            return False
 
     def classificar_alerta(self, valor):
         if valor >= 90:
@@ -453,9 +472,18 @@ class Client:
             }
 
             processos_unicos = df_processos["nome_processo"].unique()
+
             
             for nome in processos_unicos:
-                df_historico_processo = df_processos[df_processos["nome_processo"] == nome]
+                df_historico_processo = df_processos[
+                        (df_processos["nome_processo"] == nome) &
+                        (df_processos["mac_address"] == mac)
+                    ]
+                
+                if df_historico_processo.empty:
+                    print("df_historico_processo está vazio")
+                    continue
+
                 ultima_linha = df_historico_processo.iloc[-1]
                 
                 dadoProcesso = {
@@ -469,7 +497,7 @@ class Client:
                     "instancias": int(ultima_linha["instancias"]),
                     "percentualRam": round(ultima_linha["ram_total"], 2),
                 }
-                if int(ultima_linha["ram_total"]) > 0.5:
+                if float(ultima_linha["ram_total"]) > 0.5:
                     self.conteudo[mac]["processos"].append(dadoProcesso)
 
         self.salvarArquivo("dashboard_ram.json")
@@ -479,9 +507,13 @@ class Client:
             json.dump(self.conteudo, f, indent=4, ensure_ascii=False)
 
     def mainLoop(self):
+
+        if not self.carregarArquivos():
+            return
+
         self.dashboardAlertasGestor()
         self.dashboardGestor()
         self.dashboardServidoresGerais()
         self.dashboardRam()
-    
+        
 

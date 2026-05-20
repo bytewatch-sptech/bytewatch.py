@@ -110,6 +110,8 @@ class Leitura:
         horas = self.ultimo_dado["horario"]
         nome_maquina = self.ultimo_dado["nome_maquina"]
         processador = self.ultimo_dado["processador"]
+        temperatura = self.ultimo_dado["temperatura"]
+        filaProcessos = self.ultimo_dado["filaProcessos"]
 
         droppedPackets = self.ultimo_dado["droppedPackets"]
         conexoesAtivas = self.ultimo_dado["conexoesAtivas"]
@@ -148,10 +150,9 @@ class Leitura:
         latitude = self.ultimo_dado.get("latitude", -23.5505)
         longitude = self.ultimo_dado.get("longitude", -46.6333)
         cidade = self.ultimo_dado.get("cidade", "São Paulo")
-
         dados_resultados = {
             "horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], 
-            "processador": [processador], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], 
+            "processador": [processador], "temperatura": [temperatura], "filaProcessos": [filaProcessos], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], 
             "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], 
             "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], 
             "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], 
