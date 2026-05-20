@@ -1,7 +1,12 @@
-import time, psutil, os, datetime, platform, uuid, boto3, requests, wmi, random
+import time, psutil, os, datetime, platform, uuid, boto3, requests, random
 from cpuinfo import get_cpu_info
 from re import findall
 import pandas as pd 
+
+try:
+    import wmi
+except:
+    wmi = None
 
 class Escrita():
     arquivoProcessos = ""
@@ -33,7 +38,7 @@ class Escrita():
             self.longitude = -46.6333
             self.cidade = "São Paulo TM"    
     def obterMacAddress(self):
-        mac = '-'.join(findall('..', '%012x' % uuid.getnode()))
+        mac = ':'.join(findall('..', '%012x' % uuid.getnode()))
         print(f"MAC Address: {mac}")
         return mac
     
@@ -73,10 +78,13 @@ class Escrita():
         return round(self.temperatura_atual, 1)
 
     def capturarIndiceFilaProcessos(self):
-        c = wmi.WMI()
-        filaDeProcessos = [sys.ProcessorQueueLength for sys in c.Win32_PerfFormattedData_PerfOS_System()]
+        try:
+            c = wmi.WMI()
+            filaDeProcessos = [sys.ProcessorQueueLength for sys in c.Win32_PerfFormattedData_PerfOS_System()]
 
-        return filaDeProcessos[0] if filaDeProcessos else 0
+            return filaDeProcessos[0] if filaDeProcessos else 0
+        except:
+            return 0
 
     def salvarArquivo(self, dado, nomeArquivo):
         dataframe = pd.DataFrame(dado)
