@@ -147,7 +147,8 @@ class Client:
             "ramTotal": float(total_ram),
             "discoTotal": float(total_disco), 
             "custoTotalAteAgora": round(custoTotalAteAgora, 2),
-            "custoTotalNoMes": round(custoTotalMensal, 2)
+            "custoTotalNoMes": round(custoTotalMensal, 2),
+            "custoDoDia": round(custoDiarioRam)
         }
         
         for mac in self.df_metrica["macAddress"].unique():
@@ -229,6 +230,18 @@ class Client:
 
             
             ranking_ram.append((mac, pico_ram))
+
+            ranking_ram_ordenado = sorted(ranking_ram, key=lambda x: x[1], reverse=True)
+
+            ranking_formatado = []
+
+            for posicao, (mac, pico) in enumerate(ranking_ram_ordenado, start=1):
+                ranking_formatado.append({
+                    "posicao": posicao,
+                    "macAddress": mac,
+                    "picoRam": pico
+                })
+            self.conteudo["rankingRam"] = ranking_formatado
 
         self.salvarArquivo("dashboard_gestor.json")
         self.conteudo = {}
