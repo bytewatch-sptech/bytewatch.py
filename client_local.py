@@ -58,47 +58,51 @@ class Client:
             return 1
 
     def dashboardAlertasGestor(self):
+        self.conteudo = {"alertas": []}
+
         for mac in self.df_metrica["macAddress"].unique():
-            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].copy()
             df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
-        
             df_maquina = df_maquina.sort_values(by='horario')
-            ultima_linha = df_maquina
+            
             ultima_linha = df_maquina.iloc[-1]
 
-            if mac not in self.conteudo:
-                self.conteudo = {"alertas": []}
+            self.adicionar_alerta(mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario)
+            self.adicionar_alerta(mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario)
+            self.adicionar_alerta(mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario)
 
-                print((ultima_linha.porcentagemRam))
+        # Ordena a fila de alertas
+        self.conteudo["alertas"] = sorted(self.conteudo["alertas"], key=self.prioridade_alerta)
 
-                # ultima_linha.porcentagemRam = list(ultima_linha.porcentagemRam)
-                # ultima_linha.horario = list(ultima_linha.horario)
+        df_geral = self.df_metrica.copy()
+        df_geral['horario'] = pd.to_datetime(df_geral['horario'])
+        
+        # Recorta apenas o período de 24 horas
+        ultima_data_global = df_geral['horario'].max()
+        data_24h_atras = ultima_data_global - pd.Timedelta(hours=24)
+        df_24h = df_geral[df_geral['horario'] >= data_24h_atras].copy()
 
-                # for i in range(len(ultima_linha.porcentagemRam)): 
-                self.adicionar_alerta(
-                    mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario
-                )
-                    
+        if not df_24h.empty:
+            # Cia uma coluna temporária com o MAIOR uso daquela linha
+            df_24h['max_uso'] = df_24h[['cpuPorcentagem', 'porcentagemRam', 'porcentagemDisco']].max(axis=1)
 
+            # Conta quantas linhas caem em cada regra
+            qtd_critico = len(df_24h[df_24h['max_uso'] >= 90])
+            qtd_alerta = len(df_24h[(df_24h['max_uso'] >= 70) & (df_24h['max_uso'] < 90)])
+            qtd_saudavel = len(df_24h[df_24h['max_uso'] < 70])
+            total_eventos = len(df_24h)
 
-                # ultima_linha.porcentagemDisco = list(ultima_linha.porcentagemDisco)
+            # Anexa o bloco do gráfico no JSON
+            self.conteudo["graficos"] = {
+                "distribuicao_severidade": {
+                    "critico": qtd_critico,
+                    "alerta": qtd_alerta,
+                    "saudavel": qtd_saudavel,
+                    "total": total_eventos
+                }
+            }
 
-                # for i in range(len(ultima_linha.porcentagemDisco)): 
-                self.adicionar_alerta(
-                    mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario
-                )
-
-                # ultima_linha.cpuPorcentagem = list(ultima_linha.cpuPorcentagem)
-
-                # for i in range(len(ultima_linha.cpuPorcentagem)): 
-                self.adicionar_alerta(
-                    mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario
-                )
-
-                self.conteudo["alertas"] = sorted(
-                    self.conteudo["alertas"], key=self.prioridade_alerta
-                )
-
+        # Salva o arquivo e limpa a memória
         self.salvarArquivo("dashboard_alertas.json")
         self.conteudo = {}
 
