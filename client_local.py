@@ -411,6 +411,7 @@ class Client:
         return "Sem previsão"
 
     def dashboardRam(self):
+        self.conteudo = {}
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
             df_processos = self.df_processos[self.df_processos["mac_address"] == mac]
@@ -501,6 +502,143 @@ class Client:
                     self.conteudo[mac]["processos"].append(dadoProcesso)
 
         self.salvarArquivo("dashboard_ram.json")
+        self.conteudo = {}
+
+    def dashboardCpu(self):
+        self.conteudo = {}
+        for mac in self.df_metrica["macAddress"].unique():
+            df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac]
+            df_processos = self.df_processos[self.df_processos["mac_address"] == mac]
+    
+            df_maquina = df_maquina.copy()
+            df_maquina["horario"] = pd.to_datetime(df_maquina["horario"])
+            df_maquina = df_maquina.sort_values(by="horario")
+    
+            data_ultima_captura = df_maquina["horario"].max().normalize()
+            data_ontem = data_ultima_captura - pd.Timedelta(days=1)
+    
+            df_hoje = df_maquina[df_maquina["horario"] >= data_ultima_captura]
+            df_ontem = df_maquina[
+                (df_maquina["horario"] >= data_ontem)
+                & (df_maquina["horario"] < data_ultima_captura)
+            ]
+    
+            pico_hoje = 0
+            horario_pico_hoje = None
+    
+            if len(df_hoje) > 0:
+                idx_pico = df_hoje["cpuPorcentagem"].idxmax()
+                pico_hoje = int(round(df_hoje.loc[idx_pico, "cpuPorcentagem"], 0))
+                horario_pico_hoje = df_hoje.loc[idx_pico, "horario"].strftime("%H:%M")
+    
+    
+            ultima_linha = df_maquina.iloc[-1]
+    
+            nucleos_logicos = int(ultima_linha["cpuNucleosLogicos"]) if ultima_linha["cpuNucleosLogicos"] > 0 else 1
+            fila_processos = ultima_linha["filaProcessos"]
+            indice_processos_cores = round(fila_processos / nucleos_logicos, 1)
+        
+           
+            df_grafico = df_maquina.tail(24)
+    
+            if mac not in self.conteudo:
+                self.conteudo[mac] = {"metricas": [], "processos": []}
+    
+            self.conteudo[mac]["metricas"] = {
+                "tipoDado": "cpu",
+                "macAddress": mac,
+                "nomeMaquina": ultima_linha["nome_maquina"],
+                "ultimaColeta": ultima_linha["horario"].strftime("%Y-%m-%d %H:%M:%S"),
+    
+                "cpuPorcentagem": ultima_linha["cpuPorcentagem"],
+                "processador": ultima_linha["processador"],
+                "temperatura": ultima_linha["temperatura"],
+                "filaProcessos": int(ultima_linha["filaProcessos"]),
+                "cpuNucleosFisicos": int(ultima_linha["cpuNucleosFisicos"]),
+                "cpuNucleosLogicos": int(ultima_linha["cpuNucleosLogicos"]),
+                "cpuFrequencia": ultima_linha["cpuFrequencia"],       # GHz atual
+                "cpuFrequenciaMin": ultima_linha["cpuFrequenciaMin"],
+                "cpuFrequenciaMax": ultima_linha["cpuFrequenciaMax"],
+                "cpuTempoUser": ultima_linha["cpuTempoUser"],
+                "cpuTempoSistema": ultima_linha["cpuTempoSistema"],
+                "cpuTempoInativo": ultima_linha["cpuTempoInativo"],
+    
+                "kpiUso": {
+                    "percentualUsado": round(ultima_linha["cpuPorcentagem"]),
+                    "percentualLivre": round(100 - ultima_linha["cpuPorcentagem"]),
+                },
+                "kpiPico": {
+                    "picoHoje": pico_hoje,
+                    "horarioPico": horario_pico_hoje,   
+                },
+    
+                
+                "kpiTemperatura": {
+                    "temperaturaAtual": ultima_linha["temperatura"],
+                },
+    
+                
+                "kpiFrequencia": {
+                    "frequenciaAtual": ultima_linha["cpuFrequencia"],
+                    "frequenciaMax": ultima_linha["cpuFrequenciaMax"],
+                    "frequenciaMin": ultima_linha["cpuFrequenciaMin"],
+                },
+
+                "kpiIndiceProcessosCores": {
+                    "indice": indice_processos_cores,
+                    "filaProcessos": int(fila_processos),
+                    "nucleosLogicos": nucleos_logicos,
+                },
+    
+                "kpiInformacao": {
+                    "macAddress": mac,
+                    "ultimaColeta": ultima_linha["horario"].strftime("%Y-%m-%d %H:%M:%S"),
+                    "nomeMaquina": ultima_linha["nome_maquina"],
+                    "processador": ultima_linha["processador"],
+                    "nucleosFisicos": int(ultima_linha["cpuNucleosFisicos"]),
+                    "nucleosLogicos": int(ultima_linha["cpuNucleosLogicos"]),
+                    "processos": int(ultima_linha["filaProcessos"]),
+                    "frequenciaMax": ultima_linha["cpuFrequenciaMax"],
+                },
+    
+            
+                "grafico": {
+                    "percentualUsado": df_grafico["cpuPorcentagem"].tolist(),
+                    "momento": df_grafico["horario"].dt.strftime("%H:%M").tolist(),
+                },
+            }
+    
+            
+            processos_unicos = df_processos["nome_processo"].unique()
+    
+            for nome in processos_unicos:
+                df_historico_processo = df_processos[
+                    (df_processos["nome_processo"] == nome)
+                    & (df_processos["mac_address"] == mac)
+                ]
+    
+                if df_historico_processo.empty:
+                    print(f"df_historico_processo está vazio para {nome}")
+                    continue
+    
+                ultima_linha_proc = df_historico_processo.iloc[-1]
+    
+                dado_processo = {
+                    "tipoDado": "processo",
+                    "pid": int(ultima_linha_proc["pid"]),
+                    "nomeProcesso": nome,
+                    "macAddress": mac,
+                    "ultimaColeta": ultima_linha_proc["data"],
+                    "status": ultima_linha_proc["status"],
+                    "instancias": int(ultima_linha_proc["instancias"]),
+                    "quantidadeProcessos": int(ultima_linha_proc["quantidadeProcessos"]),
+                    "percentualCpu": round(ultima_linha_proc["cpu_total"], 2),
+                }
+    
+                if float(ultima_linha_proc["cpu_total"]) > 0.5:
+                    self.conteudo[mac]["processos"].append(dado_processo)
+    
+        self.salvarArquivo("dashboard_cpu.json")
 
     def salvarArquivo(self, nomeArquivo):
         with open(nomeArquivo, 'w', encoding='utf-8') as f:
@@ -515,5 +653,6 @@ class Client:
         self.dashboardGestor()
         self.dashboardServidoresGerais()
         self.dashboardRam()
+        self.dashboardCpu()
         
 
