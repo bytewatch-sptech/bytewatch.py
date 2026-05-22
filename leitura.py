@@ -122,9 +122,13 @@ class Leitura:
         cpuNucleosFisicos = self.ultimo_dado["cpuNucleosFisicos"]
         cpuNucleosLogicos = self.ultimo_dado["cpuNucleosLogicos"]
 
-        cpuTempoUser = round(self.ultimo_dado["cpuTempoUser"] / 60)
-        cpuTempoSistema = round(self.ultimo_dado["cpuTempoSistema"] / 60)
-        cpuTempoInativo = round(self.ultimo_dado["cpuTempoInativo"] / 60)
+        cpuFrequencia = round(self.ultimo_dado["cpuFrequencia"] / 1000, 2)
+        cpuFrequenciaMin = round(self.ultimo_dado["cpuFrequenciaMin"] / 1000, 2)
+        cpuFrequenciaMax = round(self.ultimo_dado["cpuFrequenciaMax"] / 1000, 2)
+
+        cpuTempoUser = round(self.ultimo_dado["cpuTempoUser"] / 60, 2)
+        cpuTempoSistema = round(self.ultimo_dado["cpuTempoSistema"] / 60, 2)
+        cpuTempoInativo = round(self.ultimo_dado["cpuTempoInativo"] / 60, 2)
 
         ramLivre  = round(self.ultimo_dado["ramLivre"]  / 1024**3, 2)
         ramUsada  = round(self.ultimo_dado["ramUsada"]  / 1024**3, 2)
@@ -147,22 +151,7 @@ class Leitura:
         velocidadeEscrita = round(self.ultimo_dado["velocidadeEscrita"] / 1024**2, 2)
         velocidadeLeitura = round(self.ultimo_dado["velocidadeLeitura"] / 1024**2, 2)
 
-        latitude = self.ultimo_dado.get("latitude", -23.5505)
-        longitude = self.ultimo_dado.get("longitude", -46.6333)
-        cidade = self.ultimo_dado.get("cidade", "São Paulo")
-        dados_resultados = {
-            "horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], 
-            "processador": [processador], "temperatura": [temperatura], "filaProcessos": [filaProcessos], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], 
-            "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], 
-            "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], 
-            "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], 
-            "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], 
-            "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], 
-            "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], 
-            "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], 
-            "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas],
-            "latitude": [latitude], "longitude": [longitude], "cidade": [cidade],
-        }
+        dados_resultados = {"horario": [horas], "macAddress": [macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "temperatura": [temperatura], "filaProcessos": [filaProcessos], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuFrequencia": [cpuFrequencia], "cpuFrequenciaMin": [cpuFrequenciaMin], "cpuFrequenciaMax": [cpuFrequenciaMax], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramLivre": [ramLivre], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "discoLivre": [discoLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "velocidadeEscrita": [velocidadeEscrita], "velocidadeLeitura": [velocidadeLeitura], "mediaRamGB": [mediaRam], "mediaDiscoGB": [mediaDisco], "porcentagemRam": [porcentagemRam], "porcentagemDisco": [porcentagemDisco], "megabytesEnviados": [megabytesEnviados], "megabytesRecebidos": [megabytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoesAtivas]}
 
         return dados_resultados
     
