@@ -665,10 +665,10 @@ class Client:
         if not self.carregarArquivos():
             return
 
-        self.dashboardAlertasGestor()
-        self.dashboardGestor()
-        self.dashboardServidoresGerais()
-        self.dashboardRam()
-        self.dashboardCpu()
+        self.dashboardAlertasGestor() # Bia e Luan
+        self.dashboardGestor() # Rian
+        self.dashboardServidoresGerais() # Vini Mendes
+        self.dashboardRam() # Luis
+        self.dashboardCpu() # Vini Cordeiro
         
 
