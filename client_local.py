@@ -407,7 +407,7 @@ class Client:
         self.salvarArquivo("dashboard_geral.json")
         self.conteudo = {}
 
-    def calcular_previsao_esgotamento(self, df_maquina):
+    def calcular_previsao_esgotamento(self, df_maquina, limite):
         data_ultima_captura = df_maquina['horario'].max().normalize()
         df_maquina = df_maquina[df_maquina['horario'] >= data_ultima_captura].copy()
         n_pontos = len(df_maquina)
@@ -443,7 +443,7 @@ class Client:
             # 100 = ax + b
             # 100 - b = a * x
             # x = (100 - b) / a
-            minuto_esgotamento = (100 - b) / a
+            minuto_esgotamento = (limite - b) / a
             ultimo_minuto = minutos_passados.iloc[-1]
             minutos_restantes = minuto_esgotamento - ultimo_minuto
             
@@ -481,7 +481,15 @@ class Client:
 
             ultima_linha = df_maquina.iloc[-1]
 
-            tempo_esgotamento = self.calcular_previsao_esgotamento(df_maquina)
+            limite = None
+            if ultima_linha.porcentagemRam >= 90:
+                limite = 100
+            elif ultima_linha.porcentagemRam >= 70:
+                limite = 90
+            else:
+                limite = 70
+
+            tempo_esgotamento = self.calcular_previsao_esgotamento(df_maquina, limite)
             
             if mac not in self.conteudo:
                 self.conteudo[mac] = {
@@ -510,6 +518,7 @@ class Client:
                     "capacidadeRam": round(ultima_linha.ramTotal),
                 },
                 "kpiEsgotamento": {
+                    "limite": limite,
                     "tempoRestante": tempo_esgotamento
                 },
                 "grafico": {
