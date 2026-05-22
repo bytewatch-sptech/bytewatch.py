@@ -655,6 +655,7 @@ class Client:
                     self.conteudo[mac]["processos"].append(dado_processo)
     
         self.salvarArquivo("dashboard_cpu.json")
+        self.conteudo = {}
 
     def salvarArquivo(self, nomeArquivo):
         with open(nomeArquivo, 'w', encoding='utf-8') as f:
