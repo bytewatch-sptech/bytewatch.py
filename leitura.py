@@ -1,5 +1,4 @@
-import time, datetime, os, uuid, glob, subprocess, boto3
-from re import findall
+import os, boto3
 import pandas as pd
 import io 
 import urllib.parse 

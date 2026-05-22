@@ -1,13 +1,17 @@
 import boto3
 import pandas as pd
 import json
-import urllib.parse
 
 class Client:
     def __init__(self, event):
         self.s3 = boto3.client('s3')
-        self.bucket = event['Records'][0]['s3']['bucket']['name']
         
+        try:
+            self.bucket = event['Records'][0]['s3']['bucket']['name']
+        except (KeyError, TypeError, IndexError):
+            print("Aviso: Evento S3 não detectado. Usando bucket padrão.")
+            self.bucket = "bytewatch-sptech-3"
+
         self.conteudo = {}
         
         self.df_metrica = self.buscarArquivoNoS3("trusted/metricas_trusted.csv")

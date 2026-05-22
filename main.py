@@ -20,16 +20,16 @@ while True:
     dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
     arquivoMetricas = capturaDadosComponentes.arquivoMetricas
     capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
-    # capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech", "raw", arquivoMetricas)
+    capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech-3", "raw", arquivoMetricas)
 
     dadosProcessos = capturaDadosComponentes.capturarProcessos()
     arquivoProcessos = capturaDadosComponentes.arquivoProcessos
     capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
-    # capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech", "raw", arquivoProcessos)
+    capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech-3", "raw", arquivoProcessos)
 
 
     leituraDadosComponentes.mainLoop()
     
     client.mainLoop()
 
-    time.sleep(10)
+    time.sleep(35)
