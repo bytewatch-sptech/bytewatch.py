@@ -36,7 +36,7 @@ class Client:
             return "ALERTA"
         return None
 
-    def adicionar_alerta(self, mac, componente, valor, horario):
+    def adicionar_alerta(self, mac, componente, valor, horario, historico_valores, historico_momentos):
         nivel = self.classificar_alerta(valor)
 
         if nivel:
@@ -48,6 +48,10 @@ class Client:
                     "valor": float(valor),
                     "horario": horario.strftime('%Y-%m-%d %H:%M:%S'),
                     "mensagem": f"Uso de {componente.upper()} em {valor}%",
+                    "grafico": {
+                        "percentualUsado": historico_valores,
+                        "momento": historico_momentos
+                    }
                 }
             )
 
@@ -60,39 +64,39 @@ class Client:
     def dashboardAlertasGestor(self):
         self.conteudo = {"alertas": []}
 
+        self.df_metrica['horario'] = pd.to_datetime(self.df_metrica['horario'])
+
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].copy()
-            df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
             df_maquina = df_maquina.sort_values(by='horario')
             
             ultima_linha = df_maquina.iloc[-1]
 
-            self.adicionar_alerta(mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario)
-            self.adicionar_alerta(mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario)
-            self.adicionar_alerta(mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario)
+            momentos_reciprocos = df_maquina["horario"].tail(7).dt.strftime('%H:%M').tolist()
+            hist_ram = df_maquina["porcentagemRam"].tail(7).tolist()
+            hist_disco = df_maquina["porcentagemDisco"].tail(7).tolist()
+            hist_cpu = df_maquina["cpuPorcentagem"].tail(7).tolist()
 
-        # Ordena a fila de alertas
+            self.adicionar_alerta(mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario, hist_ram, momentos_reciprocos)
+            self.adicionar_alerta(mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario, hist_disco, momentos_reciprocos)
+            self.adicionar_alerta(mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario, hist_cpu, momentos_reciprocos)
+
         self.conteudo["alertas"] = sorted(self.conteudo["alertas"], key=self.prioridade_alerta)
 
         df_geral = self.df_metrica.copy()
-        df_geral['horario'] = pd.to_datetime(df_geral['horario'])
         
-        # Recorta apenas o período de 24 horas
         ultima_data_global = df_geral['horario'].max()
         data_24h_atras = ultima_data_global - pd.Timedelta(hours=24)
         df_24h = df_geral[df_geral['horario'] >= data_24h_atras].copy()
 
         if not df_24h.empty:
-            # Cia uma coluna temporária com o MAIOR uso daquela linha
             df_24h['max_uso'] = df_24h[['cpuPorcentagem', 'porcentagemRam', 'porcentagemDisco']].max(axis=1)
 
-            # Conta quantas linhas caem em cada regra
             qtd_critico = len(df_24h[df_24h['max_uso'] >= 90])
             qtd_alerta = len(df_24h[(df_24h['max_uso'] >= 70) & (df_24h['max_uso'] < 90)])
             qtd_saudavel = len(df_24h[df_24h['max_uso'] < 70])
             total_eventos = len(df_24h)
 
-            # Anexa o bloco do gráfico no JSON
             self.conteudo["graficos"] = {
                 "distribuicao_severidade": {
                     "critico": qtd_critico,
@@ -102,10 +106,38 @@ class Client:
                 }
             }
 
+            df_problemas = df_24h[df_24h['max_uso'] >= 70].copy()
+
+            if not df_problemas.empty:
+                df_problemas['is_critico'] = (df_problemas['max_uso'] >= 90).astype(int)
+                df_problemas['is_alerta'] = ((df_problemas['max_uso'] >= 70) & (df_problemas['max_uso'] < 90)).astype(int)
+                df_problemas['is_total'] = 1
+
+                df_volatilidade = df_problemas.groupby('macAddress').agg(
+                    criticos=('is_critico', 'sum'),
+                    alertas=('is_alerta', 'sum'),
+                    total=('is_total', 'sum')
+                ).reset_index()
+
+                df_volatilidade = df_volatilidade.sort_values(
+                    by=['criticos', 'alertas', 'total', 'macAddress'], 
+                    ascending=[False, False, False, True]
+                )
+
+                servidor_topo = df_volatilidade.iloc[0]
+
+                self.conteudo["servidor_mais_volatil"] = {
+                    "mac": servidor_topo['macAddress'],
+                    "eventos_hoje": int(servidor_topo['total']),
+                    "criticos": int(servidor_topo['criticos']),
+                    "avisos": int(servidor_topo['alertas'])
+                }
+            else:
+                self.conteudo["servidor_mais_volatil"] = None
+
         # Salva o arquivo e limpa a memória
         self.salvarArquivo("dashboard_alertas.json")
         self.conteudo = {}
-
 
     def dashboardGestor(self):
         if self.df_metrica.empty:
@@ -142,7 +174,6 @@ class Client:
         custoAteAgoraDisco = custoDiarioDisco * dias_passados
         custoAteAgoraRam = custoDiarioRam * dias_passados
         custoTotalAteAgora = custoAteAgoraDisco + custoAteAgoraRam
-
         
         self.conteudo = {
             "primeiraColeta": data_minima.strftime('%Y-%m-%d %H:%M:%S'),
@@ -160,11 +191,11 @@ class Client:
             ultima_captura = df_maquina.iloc[-1]
 
             idx_ram = df_maquina["porcentagemRam"].idxmax()
-            pico_ram = df_maquina.loc[idx_ram, "porcentagemRam"]
+            pico_ram = float(df_maquina.loc[idx_ram, "porcentagemRam"])
             momento_pico_ram = df_maquina.loc[idx_ram, "horario"]
 
             idx_cpu = df_maquina["cpuPorcentagem"].idxmax()
-            pico_cpu = df_maquina.loc[idx_cpu, "cpuPorcentagem"]
+            pico_cpu = float(df_maquina.loc[idx_cpu, "cpuPorcentagem"])
             momento_pico_cpu = df_maquina.loc[idx_cpu, "horario"]
 
             if pico_ram > maior_pico_ram_global:
@@ -179,12 +210,12 @@ class Client:
                 "servidorPicoRAM": {
                     "macAddress": mac_pico_ram,
                     "valor": maior_pico_ram_global,
-                    "ultimaColeta": ultima_captura.horario
+                    "ultimaColeta": ultima_captura.horario.strftime('%Y-%m-%d %H:%M:%S')
                 },
                 "servidorPicoCPU": {
                     "macAddress": mac_pico_cpu,
                     "valor": maior_pico_cpu_global,
-                    "ultimaColeta": ultima_captura.horario
+                    "ultimaColeta": ultima_captura.horario.strftime('%Y-%m-%d %H:%M:%S')
                 }
             }
 
@@ -197,41 +228,40 @@ class Client:
             self.conteudo[mac]["metricas"].append({
                 "tipoDado": "ram",
                 "macAddress": mac,
-                "ultimaColeta": ultima_captura.horario,
-                "porcentagemRam": ultima_captura.porcentagemRam,
-                "ramTotal": ultima_captura.ramTotal,
-                "ramUsada": ultima_captura.ramUsada,
+                "ultimaColeta": ultima_captura.horario.strftime('%Y-%m-%d %H:%M:%S'),
+                "porcentagemRam": float(ultima_captura.porcentagemRam),
+                "ramTotal": float(ultima_captura.ramTotal),
+                "ramUsada": float(ultima_captura.ramUsada),
                 "kpi": {
-                    "percentualUsado": ultima_captura.porcentagemRam,
-                    "percentualLivre": 100 - ultima_captura.porcentagemRam
+                    "percentualUsado": float(ultima_captura.porcentagemRam),
+                    "percentualLivre": 100.0 - float(ultima_captura.porcentagemRam)
                 },
                 "grafico": {
-                    "percentualUsado": ultima_captura.porcentagemRam,
-                    "percentualLivre": 100 - ultima_captura.porcentagemRam,
+                    "percentualUsado": float(ultima_captura.porcentagemRam),
+                    "percentualLivre": 100.0 - float(ultima_captura.porcentagemRam),
                     "pico": pico_ram,
-                    "momentoPico": momento_pico_ram
+                    "momentoPico": momento_pico_ram.strftime('%Y-%m-%d %H:%M:%S')
                 }
             })
 
             self.conteudo[mac]["metricas"].append({
                 "tipoDado": "cpu",
                 "macAddress": mac,
-                "ultimaColeta": ultima_captura.horario,
+                "ultimaColeta": ultima_captura.horario.strftime('%Y-%m-%d %H:%M:%S'),
                 "processador": ultima_captura.processador,
-                "porcentagemCpu": ultima_captura.cpuPorcentagem,
+                "porcentagemCpu": float(ultima_captura.cpuPorcentagem),
                 "coresLogicos": int(ultima_captura.cpuNucleosLogicos),
                 "kpi": {
-                    "percentualUsado": ultima_captura.cpuPorcentagem,
-                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem
+                    "percentualUsado": float(ultima_captura.cpuPorcentagem),
+                    "percentualLivre": 100.0 - float(ultima_captura.cpuPorcentagem)
                 },
                 "grafico": {
-                    "percentualUsado": ultima_captura.cpuPorcentagem,
-                    "percentualLivre": 100 - ultima_captura.cpuPorcentagem,
+                    "percentualUsado": float(ultima_captura.cpuPorcentagem),
+                    "percentualLivre": 100.0 - float(ultima_captura.cpuPorcentagem),
                     "pico": pico_cpu,
-                    "momentoPico": momento_pico_cpu
+                    "momentoPico": momento_pico_cpu.strftime('%Y-%m-%d %H:%M:%S')
                 }
             })
-
             
             ranking_ram.append((mac, pico_ram))
 
@@ -249,7 +279,6 @@ class Client:
 
         self.salvarArquivo("dashboard_gestor.json")
         self.conteudo = {}
-
 
     def dashboardServidoresGerais(self):
         if self.df_metrica.empty:
