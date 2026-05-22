@@ -137,6 +137,7 @@ class Client:
 
         # Salva o arquivo e limpa a memória
         self.salvarArquivo("dashboard_alertas.json")
+        self.salvarArquivo("dashboard_alertas_tela.json")
         self.conteudo = {}
 
     def dashboardGestor(self):
