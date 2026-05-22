@@ -517,6 +517,7 @@ class Client:
                     self.conteudo[mac]["processos"].append(dadoProcesso)
 
         self.salvarArquivo("dashboard_ram.json")
+        self.conteudo = {}
 
     def salvarArquivo(self, nomeArquivo):
         with open(nomeArquivo, 'w', encoding='utf-8') as f:
@@ -527,9 +528,9 @@ class Client:
         if not self.carregarArquivos():
             return
 
-        self.dashboardAlertasGestor()
-        self.dashboardGestor()
-        self.dashboardServidoresGerais()
-        self.dashboardRam()
+        self.dashboardAlertasGestor() # Bia e Luan
+        self.dashboardGestor() # Rian
+        self.dashboardServidoresGerais() # Vini
+        self.dashboardRam() # Luis
         
 
