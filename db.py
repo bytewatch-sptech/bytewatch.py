@@ -3,9 +3,9 @@ import mysql.connector
 class Database:
     def __init__(self):
         self.config = {
-            "host": "localhost",
-            "user": "root",
-            "password": "0262",
+            "host": "3.223.199.1",
+            "user": "bytewatch",
+            "password": "@Bytewatch2026",
             "database": "monitoramento"
         }
 

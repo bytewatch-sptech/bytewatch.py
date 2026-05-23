@@ -3,7 +3,7 @@
 from escrita import Escrita
 from trusted_local import Leitura
 from client_local import Client
-# from db import database
+from db import database
 import time
 
 capturaDadosComponentes = Escrita()
@@ -11,25 +11,25 @@ leituraDadosComponentes = Leitura()
 client = Client()
 
 
-# macAddress = capturaDadosComponentes.macAddress
-# if (not database.macAddressExiste(macAddress)):
-#     print(f"Servidor com mac address {macAddress} não está cadastrado!")
+macAddress = capturaDadosComponentes.macAddress
+if (not database.macAddressExiste(macAddress)):
+    print(f"Servidor com mac address {macAddress} não está cadastrado!")
 
-# else:
-while True:
-    dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
-    arquivoMetricas = capturaDadosComponentes.arquivoMetricas
-    capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
-    capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech-3", "raw", arquivoMetricas)
+else:
+    while True:
+        dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
+        arquivoMetricas = capturaDadosComponentes.arquivoMetricas
+        capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech-3", "raw", arquivoMetricas)
 
-    dadosProcessos = capturaDadosComponentes.capturarProcessos()
-    arquivoProcessos = capturaDadosComponentes.arquivoProcessos
-    capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
-    capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech-3", "raw", arquivoProcessos)
+        dadosProcessos = capturaDadosComponentes.capturarProcessos()
+        arquivoProcessos = capturaDadosComponentes.arquivoProcessos
+        capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech-3", "raw", arquivoProcessos)
 
 
-    leituraDadosComponentes.mainLoop()
-    
-    client.mainLoop()
+        leituraDadosComponentes.mainLoop()
+        
+        client.mainLoop()
 
-    time.sleep(35)
+        time.sleep(35)

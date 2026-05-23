@@ -446,7 +446,7 @@ class Client:
             minuto_esgotamento = (limite - b) / a
             ultimo_minuto = minutos_passados.iloc[-1]
             minutos_restantes = minuto_esgotamento - ultimo_minuto
-            
+            print(minutos_restantes)
             if minutos_restantes <= 0:
                 return "Limite atingido"
             else:
