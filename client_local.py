@@ -62,9 +62,14 @@ class Client:
             return 1
 
     def dashboardAlertasGestor(self):
-        self.conteudo = {"alertas": []}
+        self.conteudo = {
+            "alertas": [],
+            "historico": []  
+        }
 
         self.df_metrica['horario'] = pd.to_datetime(self.df_metrica['horario'])
+
+        data_hoje = self.df_metrica['horario'].max().date()
 
         for mac in self.df_metrica["macAddress"].unique():
             df_maquina = self.df_metrica[self.df_metrica["macAddress"] == mac].copy()
@@ -80,6 +85,37 @@ class Client:
             self.adicionar_alerta(mac, "ram", ultima_linha.porcentagemRam, ultima_linha.horario, hist_ram, momentos_reciprocos)
             self.adicionar_alerta(mac, "disco", ultima_linha.porcentagemDisco, ultima_linha.horario, hist_disco, momentos_reciprocos)
             self.adicionar_alerta(mac, "cpu", ultima_linha.cpuPorcentagem, ultima_linha.horario, hist_cpu, momentos_reciprocos)
+
+            for index, row in df_maquina.iterrows():
+                
+                if row.horario.date() != data_hoje:
+                    continue
+
+                componentes = [
+                    {"nome": "RAM", "valor": row.porcentagemRam},
+                    {"nome": "DISCO", "valor": row.porcentagemDisco},
+                    {"nome": "CPU", "valor": row.cpuPorcentagem}
+                ]
+
+                for comp in componentes:
+                    if comp["valor"] >= 90:
+                        nivel = "CRÍTICO"
+                    elif comp["valor"] >= 70:
+                        nivel = "RISCO"  
+                    else:
+                        nivel = "SAUDÁVEL"
+                        continue
+                    
+                    alerta_formatado = {
+                        "mac": mac,
+                        "componente": comp["nome"],
+                        "nivel": nivel,
+                        "valor": round(float(comp["valor"]), 2),
+                        "horario": row.horario.strftime('%Y-%m-%d %H:%M:%S'),
+                        "mensagem": f"Uso de {comp['nome']} em {round(comp['valor'], 2)}%"
+                    }
+                    
+                    self.conteudo["historico"].append(alerta_formatado)
 
         self.conteudo["alertas"] = sorted(self.conteudo["alertas"], key=self.prioridade_alerta)
 
@@ -135,7 +171,6 @@ class Client:
             else:
                 self.conteudo["servidor_mais_volatil"] = None
 
-        # Salva o arquivo e limpa a memória
         self.salvarArquivo("dashboard_alertas.json")
         self.salvarArquivo("dashboard_alertas_tela.json")
         self.conteudo = {}
