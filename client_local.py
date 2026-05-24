@@ -25,6 +25,30 @@ class Client:
 
         df_maquina = self.df_metrica.copy()
         df_maquina['horario'] = pd.to_datetime(df_maquina['horario'])
+
+        # Criar colunas auxiliares
+        df_maquina['data'] = df_maquina['horario'].dt.date
+        df_maquina['hora'] = df_maquina['horario'].dt.hour
+
+        # Datas
+        data_hoje = df_maquina['data'].max()
+        data_ontem = data_hoje - pd.Timedelta(days=1)
+
+        # Filtrar
+        df_hoje = df_maquina[df_maquina['data'] == data_hoje]
+        df_ontem = df_maquina[df_maquina['data'] == data_ontem]
+
+        # Agrupar por hora (média ou pico, você escolhe)
+        hoje_group = df_hoje.groupby('hora')['porcentagemRam'].mean()
+        ontem_group = df_ontem.groupby('hora')['porcentagemRam'].mean()
+
+        # Garantir mesmos horários
+        horas = sorted(set(hoje_group.index).union(set(ontem_group.index)))
+
+        valores_hoje = [round(hoje_group.get(h, 0), 2) for h in horas]
+        valores_ontem = [round(ontem_group.get(h, 0), 2) for h in horas]
+
+        labels = [f"{h:02d}h" for h in horas]
         
         df_maquina = df_maquina.sort_values(by='horario')
         df_ultimas_coletas = df_maquina.groupby('macAddress').last().reset_index()
@@ -56,7 +80,13 @@ class Client:
             "discoTotal": float(total_disco), 
             "custoTotalAteAgora": round(custoTotalAteAgora, 2),
             "custoTotalNoMes": round(custoTotalMensal, 2),
-            "custoDoDia": round(custoDiarioRam)
+            "custoDoDia": round(custoDiarioRam, 2)
+        }
+
+        self.conteudo["graficoComparativo"] = {
+            "labels": labels,
+            "hoje": valores_hoje,
+            "ontem": valores_ontem
         }
         
         for mac in self.df_metrica["macAddress"].unique():
