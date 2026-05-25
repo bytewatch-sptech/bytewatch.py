@@ -556,7 +556,7 @@ class Client:
                 "filaProcessos": int(ultima_linha["filaProcessos"]),
                 "cpuNucleosFisicos": int(ultima_linha["cpuNucleosFisicos"]),
                 "cpuNucleosLogicos": int(ultima_linha["cpuNucleosLogicos"]),
-                "cpuFrequencia": ultima_linha["cpuFrequencia"],       # GHz atual
+                "cpuFrequencia": ultima_linha["cpuFrequencia"],       
                 "cpuFrequenciaMin": ultima_linha["cpuFrequenciaMin"],
                 "cpuFrequenciaMax": ultima_linha["cpuFrequenciaMax"],
                 "cpuTempoUser": ultima_linha["cpuTempoUser"],
