@@ -22,7 +22,7 @@ class Escrita():
         self.arquivoProcessos = f"processos_{self.macAddress}_raw.csv"
         self.arquivoMetricas = f"metricas_{self.macAddress}_raw.csv"
         self.obterDadoProcessador()
-        self.descobrirLocalizacao()
+        # self.descobrirLocalizacao()
 
     def descobrirLocalizacao(self):
         try:

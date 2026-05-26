@@ -828,7 +828,7 @@ class Client:
         df_geral["horario"] = pd.to_datetime(df_geral["horario"])
 
         ultima_data_global = df_geral["horario"].max()
-        data_7d_atras = ultima_data_global - pd.Timedelta(days=6)
+        data_7d_atras = ultima_data_global - pd.Timedelta(days=2)
         df_7d = df_geral[df_geral["horario"] >= data_7d_atras].copy()
 
         if df_7d.empty:
