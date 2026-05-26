@@ -408,9 +408,8 @@ class Client:
             if disco_val >= 90: gatilhos_diagnostio.append("Disco Saturado")
             if cpu_val >= 90: gatilhos_diagnostio.append("CPU Saturada")
             if ram_val >= 90: gatilhos_diagnostio.append("RAM Saturada")
-            if saturacao_rede >= 75: gatilhos_diagnostio.append("Rede Lenta")
 
-            texto_diagnostico = " + ".join(gatilhos_diagnostio) if gatilhos_diagnostio else "Operação Normal"
+            texto_diagnostico = " + ".join(gatilhos_diagnostio) if gatilhos_diagnostio else "Sem Componentes Críticos"
 
             nome_maquina = str(ultima_linha.nome_maquina)
 
