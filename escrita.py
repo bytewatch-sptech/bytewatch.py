@@ -2,6 +2,8 @@ import time, psutil, os, datetime, platform, uuid, boto3, requests, random
 from cpuinfo import get_cpu_info
 from re import findall
 import pandas as pd 
+from db import database
+import time
 
 try:
     import wmi
@@ -216,3 +218,24 @@ class Escrita():
         print(f"|    Escrita de métricas\n|    Horário: {horas}\n|    Endereço MAC: {self.macAddress}\n|    Nome da máquina: {nome_maquina}\n|\n======================================\n\n                CPU\n\nProcessador: {processador}\n\nTemperatura CPU: {temperatura}°C\nCPU Porcentagem: {cpuPorcentagem}%\nCPU Núcleos Físicos: {cpuNucleosFisicos}\nCPU Núcleos Lógicos: {cpuNucleosLogicos}\n\nCPU Frequência: {cpuFrequencia}\nCPU Frequência Mínima: {cpuFrequenciaMin}\nCPU Frequência Máxima: {cpuFrequenciaMax}\n\nCPU Tempo Usuário: {cpuTempoUser}\nCPU Tempo Sistema: {cpuTempoSistema}\nCPU Tempo Inativo: {cpuTempoInativo}\n\n----------------------------------\n                RAM\n\nRAM Usada: {ramUsada}\nRAM Total: {ramTotal}\nRAM Livre: {ramLivre}\n\n----------------------------------\n                DISCO\n\nDisco Usado: {discoUsado}\nDisco Total: {discoTotal}\nDisco Livre: {discoLivre}\n\n----------------------------------\n                INTERNET\n\nTotal Bytes Enviados: {bytesEnviados}\nTotal Bytes Recebidos: {bytesRecebidos}\nVelocidade Download: {velocidadeDownload} B/s\nvelocidade Upload: {velocidadeUpload} B/s\n\n======================================")
 
         return {"horario": [horas], "macAddress": [self.macAddress], "nome_maquina": [nome_maquina], "processador": [processador], "temperatura": [temperatura], "filaProcessos": [filaProcessos], "cpuPorcentagem": [cpuPorcentagem], "cpuNucleosFisicos": [cpuNucleosFisicos], "cpuNucleosLogicos": [cpuNucleosLogicos], "cpuFrequencia": [cpuFrequencia], "cpuFrequenciaMin": [cpuFrequenciaMin], "cpuFrequenciaMax": [cpuFrequenciaMax], "cpuTempoUser": [cpuTempoUser], "cpuTempoSistema": [cpuTempoSistema], "cpuTempoInativo": [cpuTempoInativo], "ramUsada": [ramUsada], "ramTotal": [ramTotal], "ramLivre": [ramLivre], "discoUsado": [discoUsado], "discoTotal": [discoTotal], "discoLivre": [discoLivre], "velocidadeEscrita": [velocidade_escrita], "velocidadeLeitura": [velocidade_leitura], "bytesEnviados": [bytesEnviados], "bytesRecebidos": [bytesRecebidos], "velocidadeDownload": [velocidadeDownload], "velocidadeUpload": [velocidadeUpload], "droppedPackets": [droppedPackets], "conexoesAtivas": [conexoes_ativas]}
+
+
+capturaDadosComponentes = Escrita()
+
+macAddress = capturaDadosComponentes.macAddress
+if (not database.macAddressExiste(macAddress)):
+    print(f"Servidor com mac address {macAddress} não está cadastrado!")
+
+else:
+    while True:
+        dadosComponentes = capturaDadosComponentes.obterInformacoesComponentes()
+        arquivoMetricas = capturaDadosComponentes.arquivoMetricas
+        capturaDadosComponentes.salvarArquivo(dadosComponentes, arquivoMetricas)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoMetricas, "bytewatch-sptech-3", "raw", arquivoMetricas)
+
+        dadosProcessos = capturaDadosComponentes.capturarProcessos()
+        arquivoProcessos = capturaDadosComponentes.arquivoProcessos
+        capturaDadosComponentes.salvarArquivo(dadosProcessos, arquivoProcessos)
+        capturaDadosComponentes.salvarArquivoNoBucket(arquivoProcessos, "bytewatch-sptech-3", "raw", arquivoProcessos)
+
+        time.sleep(35)
