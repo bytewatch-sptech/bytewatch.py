@@ -473,13 +473,12 @@ class Client:
                 gatilhos_diagnostio.append("CPU Saturada")
             if ram_val >= 90:
                 gatilhos_diagnostio.append("RAM Saturada")
-            if saturacao_rede >= 75:
-                gatilhos_diagnostio.append("Rede Lenta")
+            
 
             texto_diagnostico = (
                 " + ".join(gatilhos_diagnostio)
                 if gatilhos_diagnostio
-                else "Operação Normal"
+                else "Sem Componentes Críticos"
             )
 >>>>>>> 97e1e13c8dc8e1b920667e4ef33648219ae84e48
 
